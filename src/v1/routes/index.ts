@@ -1,0 +1,14 @@
+import { Router } from "express";
+import contestRouter from "./contest.route";
+import problemRouter from "./problem.route";
+import tagRouter from "./tag.route";
+import testcaseRouter from "./testcase.route";
+import runRouter from "./run.route";
+
+export const router = Router();
+
+router.use("/contests", contestRouter);
+router.use("/problems", problemRouter);
+router.use("/tags", tagRouter);
+router.use("/testcases", testcaseRouter);
+router.use("/run", runRouter);
