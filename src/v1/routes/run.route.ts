@@ -9,4 +9,7 @@ const router = Router();
 router.route("/")
     .post(validate(ZCustomRun), asyncHandler(RunController.customRun));
     
+router.route("/:runId")
+    .get(asyncHandler(RunController.getRunResult));
+
 export default router;

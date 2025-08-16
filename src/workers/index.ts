@@ -1,56 +1,107 @@
-import { codeExecutionWorker } from '../queues/codeExecution.queue';
 import { logger } from '../utils/logger';
+import { executeCodeWithJudge0 } from '../services/judge0.service';
+import { TCustomRun } from '../v1/types/run.type';
+import { Worker, Job } from "bullmq";
+import { redisConfig } from '../config/queue.config';
+import { QueueDataType } from '../v1/types/queue.type';
+import { CodeRunnerResult } from '../v1/types/worker.type';
+import { RedisClient } from '../utils/redisClient';
 
+
+
+
+export const codeRunnerWorker = new Worker<QueueDataType, CodeRunnerResult>(
+  'code-execution',
+  async (job: Job<QueueDataType>) => {
+    const { code, languageId, testCases, problemId, runId } = job.data;
+    
+    logger.info(`Processing submission: `);
+
+    const results: CodeRunnerResult['results'] = [];
+    let passedCount = 0;
+
+    // Update progress
+    await job.updateProgress(0);
+    let n = testCases.length;
+    for (let i = 0; i < n; i++) {
+      const stdin = testCases[i].input;
+      const stdout = testCases[i].output;
+
+      try {
+        const result = await executeCodeWithJudge0({
+          code,
+          languageId,
+          input: stdin,
+          expectedOutput: stdout,
+        });
+
+        
+        const passed = result.status === 'Accepted' && result.output.trim() === stdout.trim();
+
+        if (passed) passedCount++;
+
+        results.push({
+          status: result.status,
+          output: result.output,
+          runtimeError: result.error,
+          compilerError: result?.compileError,
+          executionTime: result.time,
+          memory: result.memory,
+          passed,
+        });
+
+        // Update progress
+        const progress = Math.round(((i + 1) / n) * 100);
+        await job.updateProgress(progress);
+
+      } catch (error: any) {
+        logger.error(`Error executing test case ${"testCase.id"}:`, error);
+        console.log(error);
+
+        results.push({
+          status: 'Runtime Error',
+          output: '',
+          runtimeError: error.message,
+          passed: false,
+        });
+      }
+    }
+
+
+    const finalResult: CodeRunnerResult = {
+      runId,
+      totalTestCases: n,
+      passedTestCases: passedCount,
+      results,
+    };
+
+    logger.info(`Submission ${"submissionId"} completed: ${passedCount}/${n} passed`);
+
+    return finalResult;
+  },
+  {
+    connection: redisConfig,
+    concurrency: 5,
+  }
+);
 
 // Worker event handlers
-codeExecutionWorker.on('completed', async (job, result) => {
-  logger.info(`Job ${job.id} completed.`);
-  console.log(job);
-  console.log(result);
+codeRunnerWorker.on('completed', async (job, result) => {
+  logger.info(`Custom run with runId: ${result.runId}, processed successfully`);
   
-  
-  // Update submission in database if it's not a run-only request
-  // if (!result.submissionId.startsWith('run_')) {
-  //   // await updateSubmissionResult(result);
-  // }
-  
-  // Emit real-time update via WebSocket (implement this)
-  // await notifyClient(job.data.sessionId, result);
+  await RedisClient.getInstance().setForRun(result.runId, JSON.stringify({ status: "Done", result }))
+  logger.info(`Redis client updated successfully for runId: ${result.runId}`)
 });
 
-codeExecutionWorker.on('failed', (job, err) => {
+codeRunnerWorker.on('failed', async (job, err) => {
+  if (!job) {
+    logger.error("Failed to execute the code");
+    return;
+  }
+
   logger.error(`Job ${job?.id} failed: ${err.message}`);
-  
-  // Update submission status to failed
-  // if (job?.data.submissionId && !job.data.submissionId.startsWith('run_')) {
-  //   // updateSubmissionStatus(job.data.submissionId, 'FAILED');
-  // }
+  await RedisClient.getInstance().setForRun(job.data.runId, JSON.stringify({ status: "Failed" } ));
 });
-
-// async function updateSubmissionResult(result: any) {
-//   const { prisma } = await import('../utils/prisma');
-  
-//   await prisma.submission.update({
-//     where: { id: result.submissionId },
-//     data: {
-//       status: result.overallStatus,
-//       score: result.score,
-//       passedTestCases: result.passedTestCases,
-//       totalTestCases: result.totalTestCases,
-//       // Store detailed results as JSON
-//       results: JSON.stringify(result.results),
-//     },
-//   });
-// }
-
-// async function updateSubmissionStatus(submissionId: string, status: string) {
-//   const { prisma } = await import('../utils/prisma');
-  
-//   await prisma.submission.update({
-//     where: { id: submissionId },
-//     data: { status },
-//   });
-// }
 
 // Start worker
 logger.info('🔄 Code execution worker started');

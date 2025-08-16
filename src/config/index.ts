@@ -1,4 +1,6 @@
+import dotenv from 'dotenv';
 
+dotenv.config(); 
 
 export const config = {
     nodeEnv: process.env.NODE_ENV || "development",
@@ -7,7 +9,7 @@ export const config = {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
     s3BucketName: process.env.S3_BUCKET_NAME,
-    judge0_api_url: process.env.JUDGE0_API_URL,
-    judge0_api_key: process.env.JUDGE0_API_KEY,
+    judge0ApiUrl: process.env.JUDGE0_API_URL,
+    judge0ApiKey: process.env.JUDGE0_API_KEY,
 }
 

@@ -1,13 +1,8 @@
 // server.ts
 import express, {json, urlencoded } from "express";
-import dotenv from "dotenv";
 import helmet from "helmet";
 import { httpLogger } from "./middlewares/logger.middleware";
 
-
-dotenv.config({
-    path: "./../.env"
-});
 
 
 

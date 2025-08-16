@@ -2,8 +2,10 @@ import z from "zod";
 
 export const ZCustomRun = z.object({
     problemId: z.string(),
-    input: z.array(z.string()),
-    output: z.array(z.string()),
+    testCases: z.array(z.object({
+        input: z.string(),
+        output: z.string(),
+    })),
     code: z.string(),
     languageId: z.string()
 });

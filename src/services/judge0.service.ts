@@ -1,23 +1,10 @@
 import axios from 'axios';
 import { logger } from '../utils/logger';
-import dotenv from "dotenv";
+import { config } from "./../config/index";
+import { Judge0ExecutionRequest, Judge0ExecutionResult } from '../v1/types/judge0.type';
 
 
 
-export interface Judge0ExecutionRequest {
-  code: string;
-  languageId: string;
-  input: string;
-  expectedOutput: string;
-}
-
-export interface Judge0ExecutionResult {
-  status: string;
-  output: string;
-  error?: string;
-  time?: number;
-  memory?: number;
-}
 
 export async function executeCodeWithJudge0(request: Judge0ExecutionRequest): Promise<Judge0ExecutionResult> {
   try {
@@ -26,31 +13,31 @@ export async function executeCodeWithJudge0(request: Judge0ExecutionRequest): Pr
       language_id: request.languageId,
       stdin: Buffer.from(request.input || '').toString('base64'),
     };
-    
+
     const response = await axios.post(
-      `${judge0Url}/submissions?base64_encoded=true&wait=true`,
+      `${config.judge0ApiUrl}/submissions?base64_encoded=true&wait=true`,
       submissionData,
       {
         headers: {
           'Content-Type': 'application/json',
-          'X-RapidAPI-Key': judge0Api,
+          'X-RapidAPI-Key': config.judge0ApiKey,
           'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
         },
         timeout: 30000, // 30 second timeout
       }
     );
-    
+
     const submission = response.data;
-    console.log(submission);
-    
+
     return {
       status: submission.status.description,
       output: submission.stdout ? Buffer.from(submission.stdout, 'base64').toString() : '',
       error: submission.stderr ? Buffer.from(submission.stderr, 'base64').toString() : undefined,
       time: submission.time,
+      compileError: submission.compile_output ? Buffer.from(submission.compile_output, 'base64').toString(): undefined,
       memory: submission.memory,
     };
-    
+
   } catch (error: any) {
     logger.error('Judge0 API error:', error);
     throw new Error(`Execution failed: ${error.message}`);
