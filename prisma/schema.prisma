@@ -306,9 +306,9 @@ model ProblemModerator {
 model Contest {
   id          String   @id @default(cuid())
   title       String   @db.VarChar(200)
-  description String?
-  startTime   DateTime @map("start_time")
-  endTime     DateTime @map("end_time")
+  description String   @default("")
+  startTime   DateTime @default(now()) @map("start_time")
+  endTime     DateTime @default(now()) @map("end_time")
   createdBy   String   @map("created_by")
   isOpen      Boolean  @default(false) @map("is_open")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -395,6 +395,7 @@ model ContestModerator {
   moderator Teacher @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
 
   // Indexes
+  @@unique([contestId, moderatorId])
   @@index([contestId])
   @@index([moderatorId])
   @@map("contest_moderator")
