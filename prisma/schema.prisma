@@ -1,0 +1,484 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * Enums
+ */
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum Difficulty {
+  Easy
+  Medium
+  Hard
+}
+
+enum RoleType {
+  ADMIN
+  SUPER_ADMIN
+  MODERATOR
+  OPS
+}
+
+// Core entities
+model Center {
+  id           String   @id @default(cuid())
+  name         String
+  location     String
+  code         Int      @unique
+  businessHead String
+  academicHead String
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  businessHeadAdmin Admin     @relation("BusinessHead", fields: [businessHead], references: [id], onDelete: Cascade)
+  academicHeadAdmin Admin     @relation("AcademicHead", fields: [academicHead], references: [id], onDelete: Cascade)
+  schools           School[]
+  batches           Batch[]
+  teachers          Teacher[]
+
+  // Indexes
+  @@index([code])
+  @@index([businessHead])
+  @@index([academicHead])
+  @@map("center")
+}
+
+model RoleAdmin {
+  id        String   @id @default(cuid())
+  role      RoleType @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  admins Admin[]
+
+  // Indexes
+  @@index([role])
+  @@map("role_admin")
+}
+
+model Admin {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  phone       String   @unique
+  password    String
+  linkedin    String?
+  roleId      String   @map("role_id")
+  designation String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  role                RoleAdmin @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  businessHeadCenters Center[]  @relation("BusinessHead")
+  academicHeadCenters Center[]  @relation("AcademicHead")
+
+  // Indexes
+  @@index([email])
+  @@index([phone])
+  @@index([roleId])
+  @@map("admin")
+}
+
+model School {
+  id        String   @id @default(cuid())
+  name      String
+  centerId  String   @map("center_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  center  Center  @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  batches Batch[]
+
+  // Indexes
+  @@index([centerId])
+  @@map("school")
+}
+
+model Batch {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  centerId  String    @map("center_id")
+  schoolId  String    @map("school_id")
+  startDate DateTime? @map("start_date")
+  endDate   DateTime? @map("end_date")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  center        Center         @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  school        School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  students      Student[]
+  batchContests BatchContest[]
+
+  // Indexes
+  @@index([centerId])
+  @@index([schoolId])
+  @@index([name])
+  @@map("batch")
+}
+
+model Teacher {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  phone       String   @unique
+  password    String
+  linkedin    String?
+  experience  String?
+  gender      Gender
+  centerId    String   @map("center_id")
+  designation String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  center            Center             @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  problems          Problem[]
+  contests          Contest[]
+  problemModerators ProblemModerator[]
+  contestModerators ContestModerator[]
+
+  // Indexes
+  @@index([email])
+  @@index([phone])
+  @@index([centerId])
+  @@map("teacher")
+}
+
+model Student {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  password     String
+  gender       Gender
+  phone        String   @unique
+  address      String?
+  enrollmentId String   @unique @map("enrollment_id")
+  batchId      String   @map("batch_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  batch       Batch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+
+  // Indexes
+  @@index([email])
+  @@index([phone])
+  @@index([enrollmentId])
+  @@index([batchId])
+  @@map("student")
+}
+
+// Problem management
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  problemTags ProblemTag[]
+  contestTags ContestTag[]
+  
+  // Indexes
+  @@index([name])
+  @@map("tag")
+}
+
+model Problem {
+  id               String     @id @default(cuid())
+  title            String     @db.VarChar(200)
+  problemStatement String     @default("") @map("problem_statement")
+  constraints      String     @default("")
+  difficulty       Difficulty @default(Easy)
+  points           Int        @default(0)
+  createdBy        String?    @map("created_by")
+  isActive         Boolean    @default(true) @map("is_active")
+  isPublic         Boolean    @default(false) @map("is_public")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  creator           Teacher?           @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  problemTags       ProblemTag[]
+  testCases         TestCase[]
+  problemModerators ProblemModerator[]
+  contestProblems   ContestProblem[]
+  submissions       Submission[]
+
+  // Indexes
+  @@index([createdBy])
+  @@index([difficulty])
+  @@index([isActive])
+  @@index([isPublic])
+  @@index([title])
+  @@map("problem")
+}
+
+model ProblemTag {
+  id        String   @id @default(cuid())
+  problemId String   @map("problem_id")
+  tagId     String   @map("tag_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  // Relations
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  // Unique constraint
+  @@unique([problemId, tagId])
+  @@index([problemId])
+  @@index([tagId])
+  @@map("problem_tag")
+}
+
+model ContestTag {
+  id        String @id @default(cuid())
+  contestId String @map("contest_id")
+  tagId     String @map("tag_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+    // Relations
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  // Unique constraint
+  @@unique([contestId, tagId])
+  @@index([contestId])
+  @@index([tagId])
+  @@map("contest_tag")
+
+}
+
+model TestCase {
+  id             String  @id @default(cuid())
+  problemId      String  @map("problem_id")
+  input          String  @db.VarChar(200) // URL
+  output String  @map("expected_output") @db.VarChar(200) // URL
+  isSample       Boolean @default(false) @map("is_sample")
+  point          Int?
+  explanation    String?
+
+  // Relations
+  problem           Problem            @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  submissionResults SubmissionResult[]
+
+  // Indexes
+  @@index([problemId])
+  @@index([isSample])
+  @@map("test_case")
+}
+
+model ProblemModerator {
+  id          String   @id @default(cuid())
+  problemId   String   @map("problem_id")
+  moderatorId String   @map("moderator_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  moderator Teacher @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([problemId])
+  @@index([moderatorId])
+  @@map("problem_moderator")
+}
+
+// Contest management
+model Contest {
+  id          String   @id @default(cuid())
+  title       String   @db.VarChar(200)
+  description String?
+  startTime   DateTime @map("start_time")
+  endTime     DateTime @map("end_time")
+  createdBy   String   @map("created_by")
+  isOpen      Boolean  @default(false) @map("is_open")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  creator           Teacher            @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  batchContests     BatchContest[]
+  allowedLanguages  AllowedLanguage[]
+  contestModerators ContestModerator[]
+  contestProblems   ContestProblem[]
+  submissions       Submission[]
+  tags ContestTag[]
+
+  // Indexes
+  @@index([createdBy])
+  @@index([startTime])
+  @@index([endTime])
+  @@index([isOpen])
+  @@index([title])
+  @@map("contest")
+}
+
+model BatchContest {
+  id        String   @id @default(cuid())
+  batchId   String   @map("batch_id")
+  contestId String   @map("contest_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  batch   Batch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([batchId])
+  @@index([contestId])
+  @@map("batch_contest")
+}
+
+model ProgrammingLanguage {
+  id         String   @id @default(cuid())
+  name       String   @unique @db.VarChar(200)
+  judge0Code Int      @unique @map("judge0_code")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  allowedLanguages AllowedLanguage[]
+  submissions      Submission[]
+
+  // Indexes
+  @@index([name])
+  @@index([judge0Code])
+  @@map("programming_language")
+}
+
+model AllowedLanguage {
+  id         String   @id @default(cuid())
+  languageId String   @map("language_id")
+  contestId  String   @map("contest_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  language ProgrammingLanguage @relation(fields: [languageId], references: [id], onDelete: Cascade)
+  contest  Contest             @relation(fields: [contestId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([languageId])
+  @@index([contestId])
+  @@map("allowed_language")
+}
+
+model ContestModerator {
+  id          String   @id @default(cuid())
+  contestId   String   @map("contest_id")
+  moderatorId String   @map("moderator_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  contest   Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  moderator Teacher @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([contestId])
+  @@index([moderatorId])
+  @@map("contest_moderator")
+}
+
+model ContestProblem {
+  id        String   @id @default(cuid())
+  contestId String   @map("contest_id")
+  problemId String   @map("problem_id")
+  points    Int      @default(100)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  // Unique constraint
+  @@unique([contestId, problemId])
+  @@index([contestId])
+  @@index([problemId])
+  @@map("contest_problem")
+}
+
+// Submission and judging
+model SubmissionStatus {
+  id   String @id @default(cuid())
+  name String @db.VarChar(200)
+
+  // Relations
+  submissions       Submission[]
+  submissionResults SubmissionResult[]
+
+  // Indexes
+  @@index([name])
+  @@map("submission_status")
+}
+
+model Submission {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  problemId     String   @map("problem_id")
+  contestId     String   @map("contest_id")
+  languageId    String   @map("language_id")
+  code          String   @default("")
+  statusId      String   @map("status_id")
+  executionTime Float?   @map("execution_time")
+  memoryUsed    Float?   @map("memory_used")
+  submittedAt   DateTime @default(now()) @map("submitted_at")
+
+  // Relations
+  user              Student             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem           Problem             @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  contest           Contest             @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  language          ProgrammingLanguage @relation(fields: [languageId], references: [id], onDelete: Cascade)
+  status            SubmissionStatus    @relation(fields: [statusId], references: [id], onDelete: Cascade)
+  submissionResults SubmissionResult[]
+
+  // Indexes
+  @@index([userId])
+  @@index([problemId])
+  @@index([contestId])
+  @@index([languageId])
+  @@index([statusId])
+  @@index([submittedAt])
+  @@map("submission")
+}
+
+model SubmissionResult {
+  id            String @id @default(cuid())
+  submissionId  String @map("submission_id")
+  testCaseId    String @map("test_case_id")
+  statusId      String @map("status_id")
+  executionTime Float? @map("execution_time")
+  memoryUsed    Int?   @map("memory_used")
+
+  // Relations
+  submission Submission       @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  testCase   TestCase         @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  status     SubmissionStatus @relation(fields: [statusId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([submissionId])
+  @@index([testCaseId])
+  @@index([statusId])
+  @@map("submission_result")
+}
