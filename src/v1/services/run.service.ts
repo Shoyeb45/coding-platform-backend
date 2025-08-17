@@ -2,6 +2,7 @@ import { HTTP_STATUS } from "../../config/httpCodes";
 import { codeRunnerQueue } from "../../queues/codeExecution.queue";
 import { ApiError } from "../../utils/ApiError";
 import { RedisClient } from "../../utils/redisClient";
+import { ProblemRepository } from "../repositories/problem.repository";
 import { QueueDataType } from "../types/queue.type";
 import { TCustomRun } from "../types/run.type";
 import { v4 as uuidv4 } from "uuid";
@@ -9,6 +10,15 @@ import { v4 as uuidv4 } from "uuid";
 export class RunService {
     static run = async (data: TCustomRun) => {
         const runId = uuidv4();
+        // fetch driver code
+        const driverCodes = await ProblemRepository.getDriverCodes(data.problemId)
+        if (!driverCodes?.prelude || !driverCodes?.driverCode) {
+            throw new ApiError("No drier code found for given problem");
+        } 
+        
+        // concatenate code
+        data.code = `${driverCodes?.prelude}\n\n${data.code}\n\n${driverCodes?.driverCode}`;
+
         const newData: QueueDataType = {...data, runId };
         
         // update in cache

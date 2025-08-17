@@ -26,7 +26,7 @@ router.route("/tags/:id")
 
 router.route("/driver-code/:problemId")
     .post(validate(ZProblemDriverCode), asyncHandler(ProblemController.addDriverCode))    // create driver code
-    .get(asyncHandler(ProblemController.getDriverCodes))     // get driver code of particular user
+    .get(asyncHandler(ProblemController.getDriverCodes))     
     .patch(validate(ZProblemDriverCodeUpdate), asyncHandler(ProblemController.updateDriverCode));     // edit driver code
 
 router.route("/:id")
