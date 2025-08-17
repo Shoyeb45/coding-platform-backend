@@ -231,16 +231,18 @@ model Problem {
 }
 
 model ProblemLanguage {
-  id                String @id @default(cuid())
-  problemId         String @map("problem_id")
-  languageId        String @map("language_id")
-  prelude           String @default("")
-  boilerplate       String @default("")
-  driverCode        String @default("") @map("driver_code")
-  functionSignature String @default("") @map("function_signature")
+  id          String @id @default(cuid())
+  problemId   String @map("problem_id")
+  languageId  String @map("language_id")
+  prelude     String @default("")
+  boilerplate String @default("")
+  driverCode  String @default("") @map("driver_code")
 
   problem  Problem             @relation(fields: [problemId], references: [id], onDelete: Cascade)
   language ProgrammingLanguage @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
 
   @@unique([problemId, languageId])
   @@index([id])
