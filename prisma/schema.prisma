@@ -193,7 +193,7 @@ model Tag {
   // Relations
   problemTags ProblemTag[]
   contestTags ContestTag[]
-  
+
   // Indexes
   @@index([name])
   @@map("tag")
@@ -219,6 +219,7 @@ model Problem {
   problemModerators ProblemModerator[]
   contestProblems   ContestProblem[]
   submissions       Submission[]
+  problemLanguage   ProblemLanguage[]
 
   // Indexes
   @@index([createdBy])
@@ -227,6 +228,24 @@ model Problem {
   @@index([isPublic])
   @@index([title])
   @@map("problem")
+}
+
+model ProblemLanguage {
+  id                String @id @default(cuid())
+  problemId         String @map("problem_id")
+  languageId        String @map("language_id")
+  prelude           String @default("")
+  boilerplate       String @default("")
+  driverCode        String @default("") @map("driver_code")
+  functionSignature String @default("") @map("function_signature")
+
+  problem  Problem             @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  language ProgrammingLanguage @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@unique([problemId, languageId])
+  @@index([id])
+  @@index([problemId, languageId])
+  @@map("problem_language")
 }
 
 model ProblemTag {
@@ -248,13 +267,13 @@ model ProblemTag {
 }
 
 model ContestTag {
-  id        String @id @default(cuid())
-  contestId String @map("contest_id")
-  tagId     String @map("tag_id")
+  id        String   @id @default(cuid())
+  contestId String   @map("contest_id")
+  tagId     String   @map("tag_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-    // Relations
+  // Relations
   contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
   tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
@@ -263,17 +282,16 @@ model ContestTag {
   @@index([contestId])
   @@index([tagId])
   @@map("contest_tag")
-
 }
 
 model TestCase {
-  id             String  @id @default(cuid())
-  problemId      String  @map("problem_id")
-  input          String  @db.VarChar(200) // URL
-  output String  @map("expected_output") @db.VarChar(200) // URL
-  isSample       Boolean @default(false) @map("is_sample")
-  point          Int?
-  explanation    String?
+  id          String  @id @default(cuid())
+  problemId   String  @map("problem_id")
+  input       String  @db.VarChar(200) // URL
+  output      String  @map("expected_output") @db.VarChar(200) // URL
+  isSample    Boolean @default(false) @map("is_sample")
+  point       Int?
+  explanation String?
 
   // Relations
   problem           Problem            @relation(fields: [problemId], references: [id], onDelete: Cascade)
@@ -321,7 +339,7 @@ model Contest {
   contestModerators ContestModerator[]
   contestProblems   ContestProblem[]
   submissions       Submission[]
-  tags ContestTag[]
+  tags              ContestTag[]
 
   // Indexes
   @@index([createdBy])
@@ -359,6 +377,7 @@ model ProgrammingLanguage {
   // Relations
   allowedLanguages AllowedLanguage[]
   submissions      Submission[]
+  problemLanguage  ProblemLanguage[]
 
   // Indexes
   @@index([name])
