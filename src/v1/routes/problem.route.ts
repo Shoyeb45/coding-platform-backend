@@ -1,6 +1,6 @@
 import { NextFunction, Response, Router, Request } from "express";
 import { validate } from "../../middlewares/validate.middleware";
-import { ZProblem, ZProblemCreate, ZProblemModerator } from "../types/problem.type";
+import { ZProblem, ZProblemCreate, ZProblemDriverCode, ZProblemDriverCodeUpdate, ZProblemModerator } from "../types/problem.type";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ProblemController } from "../controllers/problem.controller";
 import { deprecate } from "util";
@@ -24,6 +24,10 @@ router.route("/")
 router.route("/tags/:id")
     .get(asyncHandler(ProblemController.getTagsOfProblem));
 
+router.route("/driver-code/:problemId")
+    .post(validate(ZProblemDriverCode), asyncHandler(ProblemController.addDriverCode))    // create driver code
+    .get(asyncHandler(ProblemController.getDriverCodes))     // get driver code of particular user
+    .patch(validate(ZProblemDriverCodeUpdate), asyncHandler(ProblemController.updateDriverCode));     // edit driver code
 
 router.route("/:id")
     .get(asyncHandler(ProblemController.getProblemById))

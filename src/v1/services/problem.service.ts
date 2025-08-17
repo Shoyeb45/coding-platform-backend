@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { TProblem, TProblemCreate, TProblemFilter, TProblemModerator, TProblemUpdate } from "../types/problem.type";
+import { TProblem, TProblemCreate, TProblemDriver, TProblemDriverUpdate, TProblemFilter, TProblemModerator, TProblemUpdate } from "../types/problem.type";
 import { ApiError } from "../../utils/ApiError";
 import { ProblemRepository } from "../repositories/problem.repository";
 import { logger } from "../../utils/logger";
@@ -142,5 +142,46 @@ export class ProblemService {
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully fetched all moderators.", { moderators })
         )
+    }
+
+    static addDriverCode = async (problemId: string, driverCodeData: TProblemDriver) => {
+        if (!problemId) {
+            throw new ApiError("Could not found problem Id", HTTP_STATUS.BAD_REQUEST);
+        }
+
+        const data = await ProblemRepository.addDriverCode(problemId, driverCodeData);
+
+        if (!data) {
+            throw new ApiError("Failed to create new problem");
+        }
+        return data;
+    }
+    
+    static getDriverCodes = async (problemId: string) => {
+        if (!problemId) {
+            throw new ApiError("Could not found problem Id", HTTP_STATUS.BAD_REQUEST);
+        }
+    
+        const data = await ProblemRepository.getDriverCodes(problemId);
+    
+        if (!data) {
+            throw new ApiError("Failed to find driver codes for the given problem");
+        }
+
+        return data;
+    }
+
+    static updateDriverCode = async (problemId: string, driverCodeData: TProblemDriverUpdate) => {
+        if (!problemId) {
+            throw new ApiError("Could not found problem Id", HTTP_STATUS.BAD_REQUEST);
+        }
+    
+        const data = await ProblemRepository.updateDriverCode(problemId, driverCodeData);
+    
+        if (!data) {
+            throw new ApiError("Failed to update driver codes for the given problem");
+        }
+
+        return data;
     }
 }

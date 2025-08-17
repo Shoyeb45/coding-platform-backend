@@ -2,6 +2,8 @@ import { NextFunction, Request, Response } from "express";
 import { ProblemService } from "../services/problem.service";
 import { logger } from "../../utils/logger";
 import { ZProblemFilter } from "../types/problem.type";
+import { HTTP_STATUS } from "../../config/httpCodes";
+import { ApiResponse } from "../../utils/ApiResponse";
 
 export class ProblemController {
     static createProblem = async (req: Request, res: Response, next: NextFunction) => {
@@ -64,5 +66,27 @@ export class ProblemController {
         await ProblemService.getModeratorsOfProblem(req.params.problemId, res);
     }
 
+    static addDriverCode = async (req: Request, res: Response) => {
+        const problemId = req.params.problemId;
+        const data = await ProblemService.addDriverCode(problemId, req.body);
+        res.status(HTTP_STATUS.CREATED).json(
+            new ApiResponse("Successfully added driver code for given problem", data)
+        )
+    }
     
+    static getDriverCodes = async (req: Request, res: Response) => {
+        const problemId = req.params.problemId;
+        const data = await ProblemService.getDriverCodes(problemId);
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully fetched driver code for given problem.", data)
+        )
+    }
+    
+    static updateDriverCode = async (req: Request, res: Response) => {
+        const problemId = req.params.problemId;
+        const data = await ProblemService.updateDriverCode(problemId, req.body);
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully updated driver code for given problem.", data)
+        );
+    }
 }

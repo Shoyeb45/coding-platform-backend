@@ -1,7 +1,7 @@
 import { ApiError } from "../../utils/ApiError";
 import { logger } from "../../utils/logger";
 import { prisma } from "../../utils/prisma";
-import { TProblemCreate, TProblemFilter, TProblemModerator, TProblemUpdate } from "../types/problem.type";
+import { TProblemCreate, TProblemDriver, TProblemDriverUpdate, TProblemFilter, TProblemModerator, TProblemUpdate } from "../types/problem.type";
 
 export class ProblemRepository {
     static getProblemByTitle = async (title: string) => {
@@ -59,7 +59,7 @@ export class ProblemRepository {
 
     static getAllProblems = async (where: TProblemFilter) => {
         console.log(where);
-        
+
         const rawProblems = await prisma.problem.findMany({
             select: {
                 id: true, title: true, problemStatement: true, constraints: true, difficulty: true, points: true, isPublic: true, updatedAt: true, creator: {
@@ -212,5 +212,46 @@ export class ProblemRepository {
         })
 
         return mods;
+    }
+
+    static addDriverCode = async (problemId: string, data: TProblemDriver) => {
+        const createdDriverCode = await prisma.problemLanguage.create({
+            data: {
+                problemId, ...data
+            }, select: {
+                id: true,
+                language: {
+                    select: {
+                        name: true, id: true
+                    }
+                }, prelude: true, driverCode: true, boilerplate: true
+            }
+        });
+        return createdDriverCode;
+    }
+
+    static getDriverCodes = async (problemId: string) => {
+        const rawData = await prisma.problemLanguage.findFirst({
+            where: { problemId },
+            select: {
+                id: true,
+                language: {
+                    select: {
+                        name: true, id: true
+                    }
+                }, prelude: true, driverCode: true, boilerplate: true
+            }
+        });
+        return rawData;
+    }
+
+    static updateDriverCode = async (id: string, data: TProblemDriverUpdate) => {
+        const updatedData = await prisma.problemLanguage.update({
+            where: { id }, data, select: {
+                id: true, language: { select: { name: true, id: true } }, prelude: true, driverCode: true, boilerplate: true
+            }
+        });
+
+        return updatedData;
     }
 }   
