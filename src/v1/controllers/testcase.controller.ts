@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { TestcaseService } from "../services/testcase.service";
 import { ZTestcaseFilter } from "../types/testcase.type";
+import { HTTP_STATUS } from "../../config/httpCodes";
+import { ApiResponse } from "../../utils/ApiResponse";
 
 export class TestcaseController {
     static getPresignUrl = async (req: Request, res: Response, next: NextFunction) => {
@@ -13,9 +15,7 @@ export class TestcaseController {
         await TestcaseService.generateBulkPresignedUrl(problemId, req.body, res);
     } 
 
-    static createTestcase = async (req: Request, res: Response, next: NextFunction) => {
-        await TestcaseService.createTestcase(req.body, res);
-    } 
+
     static createTestcases = async (req: Request, res: Response, next: NextFunction) => {
         await TestcaseService.createTestcases(req.body, res);
     } 
@@ -34,4 +34,22 @@ export class TestcaseController {
         const testcaseId = req.params.testcaseId;
         await TestcaseService.removeTestcase(testcaseId, res);
     } 
+
+    static getSampleTestCase = async (req: Request, res: Response) => {
+        const problemId = req.params.problemId;
+        const data = await TestcaseService.getSampleTestcases(problemId);
+
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully fetched all the testcases", data)
+        );
+    }
+
+    static editTestcase = async (req: Request, res: Response) => {
+        const testcaseId = req.params.testcaseId;
+        const updatedTestcase = await TestcaseService.editTestcase(testcaseId, req.body);
+
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully updated given testcase.", { updatedTestcase })
+        );
+    }
 }

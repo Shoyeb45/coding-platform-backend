@@ -1,5 +1,5 @@
 import { prisma } from "../../utils/prisma";
-import { TTestcase, TTestcaseFilter, TTestcases } from "../types/testcase.type"
+import { TTestcase, TTestCaseEdit, TTestcaseFilter, TTestcases } from "../types/testcase.type"
 
 export class TestcaseRepository {
     static getTestcaseById = async (id: string) => {
@@ -12,6 +12,13 @@ export class TestcaseRepository {
         return await prisma.testCase.create({ data });
     }
 
+
+    static update = async (testcaseId: string, data: TTestCaseEdit) => {
+        return await prisma.testCase.update({
+            where: { id: testcaseId },
+            data
+        });
+    }
     static getTestcasesOfProblem = async (problemId: string) => {
         const rawData = await prisma.testCase.findMany({
             where: {
