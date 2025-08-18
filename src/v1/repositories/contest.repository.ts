@@ -19,6 +19,10 @@ export class ContestRepository {
         return createdContest;
     }
 
+    static getByTitle = async (title: string) => {
+        return await prisma.contest.findFirst({ where: { title }});
+    }
+
     static getContestById = async (id: string) => {
         const rawData = await prisma.contest.findFirst({
             where: { id },

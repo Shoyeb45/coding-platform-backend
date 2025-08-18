@@ -9,6 +9,13 @@ import { cleanObject } from "../../utils/cleanObject";
 
 export class ContestService {
     static createContest = async (contestInfo: TContestCreate) => {
+        {
+            const existing = await ContestRepository.getByTitle(contestInfo.title);
+            if (existing) {
+                throw new ApiError("Title already exist in database, please enter different title");
+            }
+        }
+
         const createdContest = await ContestRepository.create(contestInfo);
         if (!createdContest) {
             throw new ApiError("Failed to create a new contest, please try again", HTTP_STATUS.INTERNAL_SERVER_ERROR);
@@ -163,6 +170,7 @@ export class ContestService {
         }
         const contests = await ContestRepository.getContestsForUser(userId);
 
+        
         return contests.map(contest => (this.formatContestData(contest)))
     }
 }

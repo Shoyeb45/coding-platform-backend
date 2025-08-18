@@ -13,7 +13,7 @@ export class RunService {
         // fetch driver code
         const driverCodes = await ProblemRepository.getDriverCodes(data.problemId)
         if (!driverCodes?.prelude || !driverCodes?.driverCode) {
-            throw new ApiError("No drier code found for given problem");
+            throw new ApiError("No driver code found for given problem");
         } 
         
         // concatenate code
