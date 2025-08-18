@@ -1,15 +1,19 @@
 import { Redis } from "ioredis";
-import { redisConfig } from "../config/queue.config";
+import { config } from "./../config/index";
 
 export class RedisClient {
     private static instance: RedisClient;
     private redis: Redis;
     private constructor() {
-        this.redis = new Redis();
+        this.redis = new Redis({
+            host: config.redisHost,
+            port: config.redisPort,
+            password: config.redisPassword
+        });
     }
 
     public static getInstance() {
-        if (!this.instance) {  
+        if (!this.instance) {
             this.instance = new RedisClient();
         }
         return this.instance;
