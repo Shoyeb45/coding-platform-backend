@@ -9,6 +9,7 @@ export const redisConfig: ConnectionOptions = {
   maxRetriesPerRequest: null,
 };
 
+
 export const queueConfig = {
   defaultJobOptions: {
     removeOnComplete: 100,
