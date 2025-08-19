@@ -21,5 +21,8 @@ export const config = {
     redisHost: process.env.REDIS_HOST || 'localhost',
     redisPort: parseInt(process.env.REDIS_PORT || '6379'),
     redisPassword: process.env.REDIS_PASSWORD,
+
+    // jwt secret
+    jwtSecret: process.env.JWT_SECRET || "My Jwt Secret"
 }
 
