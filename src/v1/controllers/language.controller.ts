@@ -10,4 +10,11 @@ export class LanguageController {
             new ApiResponse("Successfully created new language", { language })
         )
     }
+
+    static getAllLanguages = async (req: Request, res: Response, next: NextFunction) => {
+        const languages = await LanguageService.getAllLanguages();
+        res.status(HTTP_STATUS.CREATED).json(
+            new ApiResponse("Successfully created new language", { languages })
+        )
+    }
 }

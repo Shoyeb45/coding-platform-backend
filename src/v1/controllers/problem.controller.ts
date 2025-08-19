@@ -86,6 +86,7 @@ export class ProblemController {
     }
 
     static addDriverCode = async (req: Request, res: Response) => {
+        logger.info(req.user?.role)
         if (req.user?.role !== "ASSISTANT_TEACHER" && req.user?.role !== "TEACHER") {
             throw new ApiError("Only teacher can add moderators to the problem", HTTP_STATUS.UNAUTHORIZED);
         }
@@ -104,6 +105,16 @@ export class ProblemController {
         )
     }
 
+    static deleteDriverCode = async (req: Request, res: Response) => {
+        const problemId = req.params.problemId;
+        const id = req.query.id as string;
+
+        const deletedDriverCodes = await ProblemService.deleteDriverCodes(req.user, problemId, id); 
+
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully removed driver codes.", { deletedDriverCodes })
+        );
+    }
     static updateDriverCode = async (req: Request, res: Response) => {
         if (req.user?.role !== "ASSISTANT_TEACHER" && req.user?.role !== "TEACHER") {
             throw new ApiError("Only teacher can add moderators to the problem", HTTP_STATUS.UNAUTHORIZED);

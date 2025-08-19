@@ -24,6 +24,12 @@ export class ProblemRepository {
         return createdProblem;
     }
 
+    static deleteDriverCodes = async (id: string) => {
+        return await prisma.problemLanguage.delete({ where: { id }, select: {
+            id: true, prelude: true, boilerplate: true, driverCode: true
+        }});
+    }
+
     static getProblemById = async (id: string) => {
         const rawData = await prisma.problem.findFirst({
             where: { id, isActive: true }, select: {

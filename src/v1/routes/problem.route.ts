@@ -29,8 +29,9 @@ router.route("/tags/:id")
 router.route("/driver-code/:problemId")
     .post(validate(ZProblemDriverCode), asyncHandler(ProblemController.addDriverCode))    
     .get(asyncHandler(ProblemController.getDriverCodes))     
-    .patch(validate(ZProblemDriverCodeUpdate), asyncHandler(ProblemController.updateDriverCode));     // edit driver code
-
+    .patch(validate(ZProblemDriverCodeUpdate), asyncHandler(ProblemController.updateDriverCode))
+    .delete(asyncHandler(ProblemController.deleteDriverCode));
+    
 router.route("/:id")
     .get(asyncHandler(ProblemController.getProblemById))
     .delete(asyncHandler(ProblemController.removeProblem))

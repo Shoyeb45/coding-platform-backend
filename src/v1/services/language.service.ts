@@ -23,4 +23,9 @@ export class LanguageService {
         
         return createdLangauge;
     }
+
+    static getAllLanguages = async () => {
+        const data = await LanguageRepository.getAll();
+        return data;
+    }
 }

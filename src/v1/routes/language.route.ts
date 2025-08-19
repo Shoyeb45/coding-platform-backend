@@ -9,4 +9,5 @@ const router = Router();
 
 router.route("/")
     .post(authenticateUser, validate(ZLanguageCreate), asyncHandler(LanguageController.createLanguage))
+    .get(asyncHandler(LanguageController.getAllLanguages));
 export default router;

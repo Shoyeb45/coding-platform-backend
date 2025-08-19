@@ -7,7 +7,7 @@ export class LanguageRepository {
     }
 
     static getAll = async () => {
-        return await prisma.programmingLanguage.findMany({});
+        return await prisma.programmingLanguage.findMany({ select: { id: true, name: true, judge0Code: true }});
     }
 
     static getByCode = async (judge0Code: number) => {
