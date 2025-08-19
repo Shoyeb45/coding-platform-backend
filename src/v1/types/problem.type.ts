@@ -2,7 +2,7 @@ import z from "zod";
 
 export const ZProblemCreate = z.object({
   title: z.string(),
-  createdBy: z.string()
+  createdBy: z.string().optional()
 });
 
 export const ZProblem = z.object({
@@ -21,7 +21,7 @@ export const ZProblem = z.object({
     .min(0, "Testcase weight must be >= 0.")
     .max(100, "Testcase weight must be <= 100.")
     .optional(),
-  tags: z.string().optional()
+  tags: z.array(z.string()).optional()
 }).superRefine((data, ctx) => {
   if (data.problemWeight && data.testcaseWeight && data.problemWeight + data.testcaseWeight !== 100) {
     ctx.addIssue({
