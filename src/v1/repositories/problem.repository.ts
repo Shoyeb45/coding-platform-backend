@@ -1,4 +1,3 @@
-import { ApiError } from "../../utils/ApiError";
 import { logger } from "../../utils/logger";
 import { prisma } from "../../utils/prisma";
 import { TProblemCreate, TProblemDriver, TProblemDriverUpdate, TProblemFilter, TProblemModerator, TProblemUpdate } from "../types/problem.type";
@@ -28,7 +27,7 @@ export class ProblemRepository {
     static getProblemById = async (id: string) => {
         const rawData = await prisma.problem.findFirst({
             where: { id, isActive: true }, select: {
-                id: true, title: true, problemStatement: true, constraints: true, difficulty: true, points: true, isPublic: true, updatedAt: true, creator: {
+                id: true, title: true, problemStatement: true, constraints: true, difficulty: true, problemWeight: true, testcaseWeight: true, isPublic: true, updatedAt: true, creator: {
                     select: {
                         id: true,
                         email: true,
@@ -62,7 +61,7 @@ export class ProblemRepository {
 
         const rawProblems = await prisma.problem.findMany({
             select: {
-                id: true, title: true, problemStatement: true, constraints: true, difficulty: true, points: true, isPublic: true, updatedAt: true, creator: {
+                id: true, title: true, problemStatement: true, constraints: true, difficulty: true, problemWeight: true, testcaseWeight: true, isPublic: true, updatedAt: true, creator: {
                     select: {
                         id: true,
                         email: true,
@@ -96,7 +95,7 @@ export class ProblemRepository {
     static updateProblem = async (id: string, data: TProblemUpdate) => {
         const updateProblem = await prisma.problem.update({
             data, where: { id }, select: {
-                id: true, title: true, problemStatement: true, constraints: true, difficulty: true, points: true, isPublic: true, updatedAt: true, creator: {
+                id: true, title: true, problemStatement: true, constraints: true, difficulty: true,  problemWeight: true, testcaseWeight: true, isPublic: true, updatedAt: true, creator: {
                     select: {
                         id: true,
                         email: true,
@@ -160,7 +159,7 @@ export class ProblemRepository {
                 createdBy: createdBy, isActive: true
             },
             select: {
-                id: true, title: true, problemStatement: true, constraints: true, difficulty: true, points: true, isPublic: true, updatedAt: true, creator: {
+                id: true, title: true, problemStatement: true, constraints: true, difficulty: true, problemWeight: true, testcaseWeight: true, isPublic: true, updatedAt: true, creator: {
                     select: {
                         id: true,
                         email: true,
@@ -205,7 +204,7 @@ export class ProblemRepository {
             select: {
                 moderator: {
                     select: {
-                        id: true, name: true, email: true
+                        id: true, name: true, email: true, designation: true
                     }
                 }
             }
