@@ -4,7 +4,7 @@ import helmet from "helmet";
 import { httpLogger } from "./middlewares/logger.middleware";
 import cookieParser from "cookie-parser";
 import { UserRole } from "./types/auth.type";
-
+import cors from "cors";
 
 declare global {
   namespace Express {
@@ -35,6 +35,9 @@ export function createHttpServer() {
                 success: true
             })
         })
+        .use(cors({
+          origin: "http://localhost:3000"
+        }))
         .get("/health", (req, res) => {
             res.json({
                 "message": "Coding platform app is running and it's healthy",
