@@ -4,6 +4,15 @@ import { config } from "./../config/index";
 import { Judge0ExecutionRequest, Judge0ExecutionResult } from '../v1/types/judge0.type';
 
 
+function getCpuTimeLimit(languageId: string) {
+  if (languageId === "105" || languageId === "103") {
+    return 2;  // for cpp and c
+  } else if (languageId === "91") {
+    return 4;  // for java
+  } 
+  return 5; // for js and python
+}
+
 
 
 export async function executeCodeWithJudge0(request: Judge0ExecutionRequest): Promise<Judge0ExecutionResult> {
@@ -12,6 +21,8 @@ export async function executeCodeWithJudge0(request: Judge0ExecutionRequest): Pr
       source_code: Buffer.from(request.code).toString('base64'),
       language_id: request.languageId,
       stdin: Buffer.from(request.input || '').toString('base64'),
+      cpu_time_limit: getCpuTimeLimit(request.languageId),
+      wall_time_limit: getCpuTimeLimit(request.languageId) * 3
     };
 
     const response = await axios.post(
