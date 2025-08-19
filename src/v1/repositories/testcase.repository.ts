@@ -6,6 +6,21 @@ export class TestcaseRepository {
         return await prisma.testCase.findFirst({ where: { id }, select: {
             id: true, isSample: true, input: true, output: true, weight: true, explanation: true
         }})
+    }
+
+    static getTestcaseOwner = async (id: string) => {
+        return await prisma.testCase.findFirst({ where: { id }, select: {
+            id: true, isSample: true, input: true, output: true, weight: true, explanation: true, problem: {
+                select: {
+                    problemModerators: {
+                        select: { id: true }
+                    },
+                    creator: {
+                        select: { id: true }
+                    }
+                }
+            }
+        }})
     } 
 
     static create = async (data: TTestcase) => {

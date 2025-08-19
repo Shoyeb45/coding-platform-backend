@@ -8,12 +8,52 @@ import { TestcaseRepository } from "../repositories/testcase.repository";
 import { SafeParseResult } from "zod/v4/core/util.cjs";
 import { logger } from "../../utils/logger";
 import { cleanObject } from "../../utils/cleanObject";
+import { ProblemRepository } from "../repositories/problem.repository";
 
 export class TestcaseService {
-    static generatePresignedUrl = async (problemId: string, testcaseData: TTestCaseCreate, res: Response) => {
+    private static authenticateTeacher = (user: Express.Request["user"]) => {
+        if (!user?.sub) {
+            throw new ApiError("No teacher id found");
+        }
+
+        if (user.role !== "ASSISTANT_TEACHER" && user.role !== "TEACHER") {
+            throw new ApiError("Unauthorized access, only teacher is allowed to modify testcases", HTTP_STATUS.UNAUTHORIZED);
+        }
+    }
+
+    private static async checkProblem(teacherId: string | undefined, problemId: string) {
+        if (!teacherId) {
+            throw new ApiError("No teacher id found");
+        }
+        const problem = await ProblemRepository.getProblemById(problemId);
+
+        if (problem?.creator?.id !== teacherId) {
+            throw new ApiError("Failed ")
+        }
+    }
+
+    private static async isModeratorAllowed(teacherId: string | undefined, problemId: string, message: string) {
+        if (!teacherId) {
+            throw new ApiError("No teacher id found");
+        }
+        // get all the mods
+        const mods = await ProblemRepository.getModerators(problemId);
+        for (const mod of mods) {
+            if (mod.moderator.id === teacherId) {
+                return;
+            }
+        }
+        throw new ApiError(message, HTTP_STATUS.UNAUTHORIZED);
+    }
+
+    static generatePresignedUrl = async (user: Express.Request["user"], problemId: string, testcaseData: TTestCaseCreate, res: Response) => {
+        this.authenticateTeacher(user);
         if (!problemId.trim()) {
             throw new ApiError("Couldn't find id of the problem to upload the testcases.", HTTP_STATUS.NOT_FOUND);
         }
+        await this.checkProblem(user?.sub, problemId);
+        await this.isModeratorAllowed(user?.sub, problemId, "Unauthorized access, you are not allowed to generate presigned url for given problem.");
+
         const inputKey = `testcases/${problemId}/input/${testcaseData.inputFilename}`;
         const outputKey = `testcases/${problemId}/output/${testcaseData.outputFilename}`;
 
@@ -32,10 +72,13 @@ export class TestcaseService {
     }
 
 
-    static generateBulkPresignedUrl = async (problemId: string, testcasesData: TBulkTestCaseCreate, res: Response) => {
+    static generateBulkPresignedUrl = async (user: Express.Request["user"], problemId: string, testcasesData: TBulkTestCaseCreate, res: Response) => {
+        this.authenticateTeacher(user);
         if (!problemId.trim()) {
             throw new ApiError("Couldn't find id of the problem to upload the testcases.", HTTP_STATUS.NOT_FOUND);
         }
+        await this.checkProblem(user?.sub, problemId);
+        await this.isModeratorAllowed(user?.sub, problemId, "Unauthorized access, you are not allowed to generate presigned url for given problem.");
 
         const data = { presignedUrls: [{}] }
 
@@ -62,7 +105,14 @@ export class TestcaseService {
 
 
 
-    static createTestcases = async (testcasesData: TTestcases, res: Response) => {
+    static createTestcases = async (user: Express.Request["user"], testcasesData: TTestcases, res: Response) => {
+        if (testcasesData.testcases.length <= 0) {
+            throw new ApiError("No testcases found to upload in database.");
+        }
+        this.authenticateTeacher(user);
+        await this.checkProblem(user?.sub, testcasesData.testcases[0].problemId);
+        await this.isModeratorAllowed(user?.sub, testcasesData.testcases[0].problemId, "Unauthorized access, you are not allowed to create testcases in database.")
+
         testcasesData.testcases = testcasesData.testcases.map((testcase) => {
             return {
                 ...testcase,
@@ -99,10 +149,14 @@ export class TestcaseService {
         );
     }
 
-    static getAllTestcases = async (problemId: string, res: Response) => {
+    static getAllTestcases = async (user: Express.Request["user"], problemId: string, res: Response) => {
+        this.authenticateTeacher(user);
         if (!problemId) {
             throw new ApiError("No problem id found", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
+        await this.checkProblem(user?.sub, problemId);
+        await this.isModeratorAllowed(user?.sub, problemId, "unauthorized access, you are not allowed to see all the hidden testcases.");
+        
 
         const data = await TestcaseRepository.getTestcasesOfProblem(problemId);
         if (!data) {
@@ -139,12 +193,36 @@ export class TestcaseService {
     }
 
 
-    static removeTestcase = async (testcaseId: string, res: Response) => {
+    private static async checkTestcase(teacherId: string | undefined, testcaseId: string) {
+        if (!teacherId) {
+            throw new ApiError("No teacher id found");
+        }
+
+        const data = await TestcaseRepository.getTestcaseOwner(testcaseId);
+        if (!data) {
+            throw new ApiError("No testcase found with given id.");
+        }
+
+        if (data.problem.creator?.id !== teacherId) {
+            throw new ApiError("Unauthorized access, you are not allowed to perform changes on testcases.");
+        }
+        
+        // now check moderators
+        for (const mod of data.problem.problemModerators) {
+            if (mod.id === teacherId) {
+                return;
+            }
+        }
+        throw new ApiError("Unauthorized access, you are not allowed to perform changes on testcases.");
+    }
+
+    static removeTestcase = async (user: Express.Request["user"], testcaseId: string, res: Response) => {
+        this.authenticateTeacher(user);
         if (!testcaseId) {
             throw new ApiError("No testcase id found.", HTTP_STATUS.BAD_REQUEST);
         }
 
-        logger.info("Deleted testcases from DB.");
+        await this.checkTestcase(user?.sub, testcaseId);
 
         const removedTestcase = await TestcaseRepository.remove(testcaseId);
         if (!removedTestcase) {
@@ -160,11 +238,14 @@ export class TestcaseService {
         );
     }
 
-    // TODO: complete
     static getSampleTestcases = async (problemId: string) => {
         if (!problemId) {
             throw new ApiError("No problem id found.", HTTP_STATUS.BAD_REQUEST);
         }
+        if (!(await ProblemRepository.getProblemById(problemId))) {
+            throw new ApiError("No problem found with given id", HTTP_STATUS.BAD_REQUEST);
+        }
+
         let testcases = await TestcaseRepository.getTestcases({ problemId, isSample: true });
 
         if (!testcases) {
@@ -182,10 +263,13 @@ export class TestcaseService {
         return data;
     }
 
-    static editTestcase = async (testcaseId: string, testcaseInfo: TTestCaseEdit) => {
+    static editTestcase = async (user: Express.Request["user"], testcaseId: string, testcaseInfo: TTestCaseEdit) => {
+        this.authenticateTeacher(user);
         if (!testcaseId) {
             throw new ApiError("No testcase id found.", HTTP_STATUS.BAD_REQUEST);
         }
+        await this.checkTestcase(user?.sub, testcaseId);
+
         const testcases = await TestcaseRepository.update(testcaseId, cleanObject(testcaseInfo));
 
         if (!testcases) {
@@ -196,7 +280,8 @@ export class TestcaseService {
 
     }
 
-    static getTestcase = async (testcaseId: string) => {
+    static getTestcase = async (user: Express.Request["user"], testcaseId: string) => {
+        this.authenticateTeacher(user);
         if (!testcaseId) {
             throw new ApiError("Testcase id not found", HTTP_STATUS.BAD_REQUEST);
         }
@@ -209,7 +294,7 @@ export class TestcaseService {
         // replace input and output keys with actual testcase         
         data.input = await S3Service.getInstance().getFileContent(data.input);
         data.output = await S3Service.getInstance().getFileContent(data.output);
-        
+
         return data;
     }
 }

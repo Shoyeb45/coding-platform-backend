@@ -7,17 +7,17 @@ import { ApiResponse } from "../../utils/ApiResponse";
 export class TestcaseController {
     static getPresignUrl = async (req: Request, res: Response, next: NextFunction) => {
         const problemId = req.params.problemId;
-        await TestcaseService.generatePresignedUrl(problemId, req.body, res);
+        await TestcaseService.generatePresignedUrl(req.user, problemId, req.body, res);
     } 
     
     static getBulkPresignUrl = async (req: Request, res: Response, next: NextFunction) => {
         const problemId = req.params.problemId;
-        await TestcaseService.generateBulkPresignedUrl(problemId, req.body, res);
+        await TestcaseService.generateBulkPresignedUrl(req.user, problemId, req.body, res);
     } 
 
 
     static createTestcases = async (req: Request, res: Response, next: NextFunction) => {
-        await TestcaseService.createTestcases(req.body, res);
+        await TestcaseService.createTestcases(req.user, req.body, res);
     } 
 
     static getTestcases = async (req: Request, res: Response, next: NextFunction) => {
@@ -27,7 +27,7 @@ export class TestcaseController {
 
     static getTestcase = async (req: Request, res: Response, next: NextFunction) => {
         const testcaseId = req.params.testcaseId;
-        const data = await TestcaseService.getTestcase(testcaseId);
+        const data = await TestcaseService.getTestcase(req.user, testcaseId);
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully fetched the testcase", data)
         );
@@ -35,12 +35,12 @@ export class TestcaseController {
 
     static getAllTestCases = async (req: Request, res: Response, next: NextFunction) => {
         const problemId = req.params.problemId;
-        await TestcaseService.getAllTestcases(problemId, res)
+        await TestcaseService.getAllTestcases(req.user, problemId, res)
     }
 
     static removeTestcase = async (req: Request, res: Response, next: NextFunction) => {
         const testcaseId = req.params.testcaseId;
-        await TestcaseService.removeTestcase(testcaseId, res);
+        await TestcaseService.removeTestcase(req.user, testcaseId, res);
     } 
 
     static getSampleTestCase = async (req: Request, res: Response) => {
@@ -54,7 +54,7 @@ export class TestcaseController {
 
     static editTestcase = async (req: Request, res: Response) => {
         const testcaseId = req.params.testcaseId;
-        const updatedTestcase = await TestcaseService.editTestcase(testcaseId, req.body);
+        const updatedTestcase = await TestcaseService.editTestcase(req.user, testcaseId, req.body);
 
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully updated given testcase.", { updatedTestcase })

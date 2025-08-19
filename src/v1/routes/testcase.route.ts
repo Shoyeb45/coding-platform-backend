@@ -3,26 +3,28 @@ import { TestcaseController } from "../controllers/testcase.controller";
 import { ZBulkTestcaseCreate, ZTestcase, ZTestcaseCreate, ZTestCaseEdit, ZTestcases } from "../types/testcase.type";
 import { validate } from "../../middlewares/validate.middleware";
 import { asyncHandler } from "../../utils/asyncHandler";
+import { authenticateUser } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
 router.route("/:problemId/presign")
-    .post(validate(ZTestcaseCreate), asyncHandler(TestcaseController.getPresignUrl));
+    .post(authenticateUser, validate(ZTestcaseCreate), asyncHandler(TestcaseController.getPresignUrl));
     
 router.route("/:problemId/bulk-presign")
-    .post(validate(ZBulkTestcaseCreate), asyncHandler(TestcaseController.getBulkPresignUrl));
+    .post(authenticateUser, validate(ZBulkTestcaseCreate), asyncHandler(TestcaseController.getBulkPresignUrl));
 
 router.route("/:testcaseId")
-    .delete(asyncHandler(TestcaseController.removeTestcase))
-    .patch(validate(ZTestCaseEdit), asyncHandler(TestcaseController.editTestcase));
+    .delete(authenticateUser, asyncHandler(TestcaseController.removeTestcase))
+    .patch(authenticateUser, validate(ZTestCaseEdit), asyncHandler(TestcaseController.editTestcase));
     
 router.route("/")
-    .post(validate(ZTestcases), asyncHandler(TestcaseController.createTestcases));
+    .post(authenticateUser, validate(ZTestcases), asyncHandler(TestcaseController.createTestcases));
 
 router.route("/all/:problemId")
-    .get(asyncHandler(TestcaseController.getAllTestCases));
+    .get(authenticateUser, asyncHandler(TestcaseController.getAllTestCases));
+
 router.route("/:testcaseId")
-    .get(asyncHandler(TestcaseController.getTestcase));
+    .get(authenticateUser, asyncHandler(TestcaseController.getTestcase));
 
 router.route("/sample/:problemId")
     .get(asyncHandler(TestcaseController.getSampleTestCase));

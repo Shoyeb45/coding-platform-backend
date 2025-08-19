@@ -12,7 +12,11 @@ export class ContestRepository {
         const createdContest = await prisma.contest.create({
             data: { ...data, createdBy },
             select: {
-                title: true, description: true, startTime: true, endTime: true
+                title: true, description: true, startTime: true, endTime: true, creator: {
+                    select: {
+                        id: true, name: true, email: true, designation: true
+                    }
+                }
             }
         });
 
@@ -20,7 +24,7 @@ export class ContestRepository {
     }
 
     static getByTitle = async (title: string) => {
-        return await prisma.contest.findFirst({ where: { title }});
+        return await prisma.contest.findFirst({ where: { title } });
     }
 
     static getContestById = async (id: string) => {
@@ -52,6 +56,10 @@ export class ContestRepository {
                         language: {
                             select: { id: true, name: true }
                         }
+                    }
+                }, creator: {
+                    select: {
+                        id: true, name: true, email: true, designation: true
                     }
                 }
             }
@@ -123,7 +131,7 @@ export class ContestRepository {
         });
     }
 
-    static deleteProblem = async (where: { problemId: string, contestId: string}) => {
+    static deleteProblem = async (where: { problemId: string, contestId: string }) => {
         return await prisma.contestProblem.deleteMany({ where });
     }
     static getAllProblems = async (contestId: string) => {
@@ -191,7 +199,7 @@ export class ContestRepository {
         return await prisma.contestModerator.create({
             data: {
                 contestId, moderatorId: data.moderatorId
-            }, 
+            },
             select: {
                 moderator: {
                     select: {

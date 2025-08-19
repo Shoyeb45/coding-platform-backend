@@ -9,7 +9,10 @@ export class ContestController {
 
     static getContests = async (req: Request, res: Response) => {
         // TODO: Add actual id
-        const contests = await ContestService.getContests("");
+        const contests = await ContestService.getContests(req.user);
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully fetched all the contests.", { contests })
+        );
     }
 
     static addModerator = async (req: Request, res: Response) => {
@@ -40,7 +43,7 @@ export class ContestController {
 
     static getAllModerators = async (req: Request, res: Response) => {
         const contestId = req.params.contestId;
-        const data = await ContestService.getAllModerators(contestId);
+        const data = await ContestService.getAllModerators(req.user, contestId);
 
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully fetched all moderators of the contest.", { moderators: data })
@@ -56,7 +59,7 @@ export class ContestController {
 
     static updateContest = async (req: Request, res: Response) => {
         const contestId = req.params.contestId;
-        const updatedContestData = await ContestService.updateContest(contestId, req.body);
+        const updatedContestData = await ContestService.updateContest(req.user, contestId, req.body);
 
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully update contest with given id", { updatedContestData })
@@ -65,7 +68,7 @@ export class ContestController {
 
     static getContest = async (req: Request, res: Response) => {
         const contestId = req.params.contestId;
-        const contestDetails = await ContestService.getContestById(contestId);
+        const contestDetails = await ContestService.getContestById(req.user, contestId);
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully fetched contest details with give id.", { contestDetails })
         )
@@ -73,7 +76,7 @@ export class ContestController {
     
     static addProblemToContest = async (req: Request, res: Response) => {
         const contestId = req.params.contestId;
-        const data = await ContestService.addProblemToContest(contestId, req.body);
+        const data = await ContestService.addProblemToContest(req.user, contestId, req.body);
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully added problem", { problemDetail: data })
         );

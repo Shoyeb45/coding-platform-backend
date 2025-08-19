@@ -3,8 +3,11 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { ContestController } from "../controllers/contest.controller";
 import { validate } from "../../middlewares/validate.middleware";
 import { ZContest, ZContestCreate, ZContestMod, ZContestProblem } from "../types/contest.type";
+import { authenticateUser } from "../../middlewares/auth.middleware";
 
 const router = Router();
+
+router.use(authenticateUser);
 
 router.route("/")
     .post(validate(ZContestCreate), asyncHandler(ContestController.createContest))
