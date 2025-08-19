@@ -155,6 +155,27 @@ export class ProblemService {
         return false;
     }
 
+    static deleteDriverCodes = async (user: Express.Request["user"], problemId: string, id: string) => {
+        if (!problemId) {
+            throw new ApiError("No problem id found", HTTP_STATUS.BAD_REQUEST);
+        }
+        if (!user?.sub) {
+            throw new ApiError("No teacher id found");
+        }
+
+        if (user.role !== "TEACHER" && user.role !== "ASSISTANT_TEACHER") {
+            throw new ApiError("Unauthorized access, your are not allowed to perform changes.");
+        }
+        await this.checkProblem(problemId, user.sub);
+        await this.authenticateModerator(user.sub, problemId);
+
+        const data = await ProblemRepository.deleteDriverCodes(id);
+        if (!data) {
+            throw new ApiError("Failed to delete driver codes");
+        }
+
+        return data; 
+    }   
     static addModeratorsToProblem = async (teacherId: string | undefined, data: TProblemModerator, res: Response) => {
         if (!teacherId) {
             throw new ApiError("Teacher id not found.", HTTP_STATUS.UNAUTHORIZED);

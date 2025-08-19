@@ -79,6 +79,8 @@ export class ContestRepository {
     }
 
     static update = async (id: string, data: Prisma.ContestUpdateInput) => {
+        console.log(data);
+        
         const updatedContest = await prisma.contest.update({
             where: { id },
             data,

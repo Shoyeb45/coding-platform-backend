@@ -55,9 +55,9 @@ export class ContestService {
             throw new ApiError("No contest found with given id.", HTTP_STATUS.BAD_REQUEST);
         }
 
-        if (existingContest.creator.id !== teacherId) {
-            throw new ApiError("You don't have access to modify the contest", HTTP_STATUS.UNAUTHORIZED);
-        }
+        let teacher = existingContest.creator.id === teacherId;
+        let moderator = await this.authenticateModerator(teacherId, contestId);
+        return teacher || moderator;
     }
 
     static deleteModerator = async (user: Express.Request["user"], contestId: string, modData: TContestMod) => {
@@ -65,9 +65,8 @@ export class ContestService {
         if (!contestId) {
             throw new ApiError("Contest id not found.", HTTP_STATUS.BAD_REQUEST);
         }
-        await this.checkContest(user?.sub, contestId);
 
-        if (!(await this.authenticateModerator(user?.sub, contestId))) {
+        if (!(await this.checkContest(user?.sub, contestId))) {
             throw new ApiError("Unauthorized access, you don't have access to delete this contest", HTTP_STATUS.UNAUTHORIZED);
         }
 
@@ -82,8 +81,8 @@ export class ContestService {
         if (!contestId) {
             throw new ApiError("No contest id found", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-        await this.checkContest(user?.sub, contestId);
-        if (!(await this.authenticateModerator(user?.sub, contestId))) {
+
+        if (!(await this.checkContest(user?.sub, contestId))) {
             throw new ApiError("Unauthorized access, you don't have access to delete the problem from contest", HTTP_STATUS.UNAUTHORIZED);
         }
 
@@ -98,8 +97,8 @@ export class ContestService {
         if (!contestId) {
             throw new ApiError("Contest id not found.", HTTP_STATUS.BAD_REQUEST);
         }
-        await this.checkContest(user?.sub, contestId);
-        if (!(await this.authenticateModerator(user?.sub, contestId))) {
+    
+        if (!(await this.checkContest(user?.sub, contestId))) {
             throw new ApiError("Unauthorized access, you don't have access to add the moderators to the contest", HTTP_STATUS.UNAUTHORIZED);
         }
 
@@ -117,9 +116,8 @@ export class ContestService {
         if (!contestId) {
             throw new ApiError("No contest id found", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-        await this.checkContest(user?.sub, contestId);
 
-        if (!(await this.authenticateModerator(user?.sub, contestId))) {
+        if (!(await this.checkContest(user?.sub, contestId))) {
             throw new ApiError("Unauthorized access, you don't have access to see the moderators of the contest", HTTP_STATUS.UNAUTHORIZED);
         }
 
@@ -132,10 +130,11 @@ export class ContestService {
         if (!contestId) {
             throw new ApiError("No contest id found.", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-        await this.checkContest(user?.sub, contestId);
-        if (!(await this.authenticateModerator(user?.sub, contestId))) {
+        
+        if (!(await this.checkContest(user?.sub, contestId))) {
             throw new ApiError("Unauthorized access, you don't have access to update the contest", HTTP_STATUS.UNAUTHORIZED);
         }
+
         const { batches, moderators, topics, languages, ...rest } = contestInfo;
         const data: any = cleanObject(rest);
 
@@ -204,11 +203,14 @@ export class ContestService {
 
         const data = await ContestRepository.getContestById(contestId);
         if (!data) {
-            throw new ApiError("No contest with given id.", HTTP_STATUS.INTERNAL_SERVER_ERROR);
+            throw new ApiError("No contest found with given id.", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-
-        if (!(await this.authenticateModerator(user?.sub, contestId))) {
-            throw new ApiError("Unauthorized access, you don't have access to see the contest data.", HTTP_STATUS.UNAUTHORIZED);
+        {
+            let teacher = data.creator.id === user?.sub;
+            let mod = await this.authenticateModerator(user?.sub, contestId);
+            if (!(mod || teacher)) {
+                throw new ApiError("Unauthorized access, you don't have access to see the contest data.", HTTP_STATUS.UNAUTHORIZED);
+            }
         }
 
         return this.formatContestData(data);
@@ -216,8 +218,8 @@ export class ContestService {
 
     static addProblemToContest = async (user: Express.Request["user"], contestId: string, data: TContestProblem) => {
         this.authenticateTeacher(user);
-        await this.checkContest(user?.sub, contestId);
-        if (!(await this.authenticateModerator(user?.sub, contestId))) {
+
+        if (!(await this.checkContest(user?.sub, contestId))) {
             throw new ApiError("Unauthorized access, you don't have access to add the problem to the contest", HTTP_STATUS.UNAUTHORIZED);
         }
 

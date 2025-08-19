@@ -27,12 +27,17 @@ export class TestcaseService {
         }
         const problem = await ProblemRepository.getProblemById(problemId);
 
-        if (problem?.creator?.id !== teacherId) {
-            throw new ApiError("Failed ")
+        if (!problem) {
+            throw new ApiError("No problem exist with given id");
         }
+
+        let teacher = problem?.creator?.id === teacherId;
+        let moderator = await this.isModeratorAllowed(teacherId, problemId);
+
+        return teacher || moderator;
     }
 
-    private static async isModeratorAllowed(teacherId: string | undefined, problemId: string, message: string) {
+    private static async isModeratorAllowed(teacherId: string | undefined, problemId: string) {
         if (!teacherId) {
             throw new ApiError("No teacher id found");
         }
@@ -40,10 +45,10 @@ export class TestcaseService {
         const mods = await ProblemRepository.getModerators(problemId);
         for (const mod of mods) {
             if (mod.moderator.id === teacherId) {
-                return;
+                return true;
             }
         }
-        throw new ApiError(message, HTTP_STATUS.UNAUTHORIZED);
+        return false;
     }
 
     static generatePresignedUrl = async (user: Express.Request["user"], problemId: string, testcaseData: TTestCaseCreate, res: Response) => {
@@ -51,8 +56,9 @@ export class TestcaseService {
         if (!problemId.trim()) {
             throw new ApiError("Couldn't find id of the problem to upload the testcases.", HTTP_STATUS.NOT_FOUND);
         }
-        await this.checkProblem(user?.sub, problemId);
-        await this.isModeratorAllowed(user?.sub, problemId, "Unauthorized access, you are not allowed to generate presigned url for given problem.");
+        if (!(await this.checkProblem(user?.sub, problemId))) {
+            throw new ApiError("Unauthorized access, you are not allowed to generate presigned url for given problem.", HTTP_STATUS.UNAUTHORIZED);
+        }
 
         const inputKey = `testcases/${problemId}/input/${testcaseData.inputFilename}`;
         const outputKey = `testcases/${problemId}/output/${testcaseData.outputFilename}`;
@@ -77,8 +83,9 @@ export class TestcaseService {
         if (!problemId.trim()) {
             throw new ApiError("Couldn't find id of the problem to upload the testcases.", HTTP_STATUS.NOT_FOUND);
         }
-        await this.checkProblem(user?.sub, problemId);
-        await this.isModeratorAllowed(user?.sub, problemId, "Unauthorized access, you are not allowed to generate presigned url for given problem.");
+        if (!(await this.checkProblem(user?.sub, problemId))) {
+            throw new ApiError("Unauthorized access, you are not allowed to generate presigned url for given problem.", HTTP_STATUS.UNAUTHORIZED);
+        }
 
         const data = { presignedUrls: [{}] }
 
@@ -110,8 +117,9 @@ export class TestcaseService {
             throw new ApiError("No testcases found to upload in database.");
         }
         this.authenticateTeacher(user);
-        await this.checkProblem(user?.sub, testcasesData.testcases[0].problemId);
-        await this.isModeratorAllowed(user?.sub, testcasesData.testcases[0].problemId, "Unauthorized access, you are not allowed to create testcases in database.")
+        if (!(await this.checkProblem(user?.sub, testcasesData.testcases[0].problemId))) {
+            throw new ApiError("Unauthorized access, you are not allowed to create testcases in database.", HTTP_STATUS.UNAUTHORIZED);
+        }
 
         testcasesData.testcases = testcasesData.testcases.map((testcase) => {
             return {
@@ -154,8 +162,9 @@ export class TestcaseService {
         if (!problemId) {
             throw new ApiError("No problem id found", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-        await this.checkProblem(user?.sub, problemId);
-        await this.isModeratorAllowed(user?.sub, problemId, "unauthorized access, you are not allowed to see all the hidden testcases.");
+        if (!(await this.checkProblem(user?.sub, problemId))) {
+            throw new ApiError("Unauthorized access, you are not allowed to see all the hidden testcases.", HTTP_STATUS.UNAUTHORIZED);
+        }
         
 
         const data = await TestcaseRepository.getTestcasesOfProblem(problemId);
