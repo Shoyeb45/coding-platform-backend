@@ -2,9 +2,23 @@
 import express, {json, urlencoded } from "express";
 import helmet from "helmet";
 import { httpLogger } from "./middlewares/logger.middleware";
+import cookieParser from "cookie-parser";
+import { UserRole } from "./types/auth.type";
 
 
-
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        sub: string;
+        email: string;
+        name: string;
+        role: UserRole;
+        designation?: string;
+      };
+    }
+  }
+}
 
 export function createHttpServer() {
     const app = express();
@@ -14,6 +28,7 @@ export function createHttpServer() {
         .use(httpLogger)
         .use(urlencoded())
         .use(helmet())
+        .use(cookieParser())
         .get("/", (req, res) => {
             res.json({
                 "message": "Coding platform app is running",
