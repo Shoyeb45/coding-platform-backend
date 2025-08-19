@@ -26,7 +26,7 @@ export class TestcaseService {
 
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully generated presigned url", {
-                inputUploadUrl: inputUrl, outputUploadUrl: outputKey
+                inputUploadUrl: inputUrl, outputUploadUrl: outputUrl
             })
         );
     }
@@ -194,5 +194,22 @@ export class TestcaseService {
 
         return testcases;
 
+    }
+
+    static getTestcase = async (testcaseId: string) => {
+        if (!testcaseId) {
+            throw new ApiError("Testcase id not found", HTTP_STATUS.BAD_REQUEST);
+        }
+
+        const data = await TestcaseRepository.getTestcaseById(testcaseId);
+
+        if (!data) {
+            throw new ApiError("Failed to fetch testcase, please try again.");
+        }
+        // replace input and output keys with actual testcase         
+        data.input = await S3Service.getInstance().getFileContent(data.input);
+        data.output = await S3Service.getInstance().getFileContent(data.output);
+        
+        return data;
     }
 }

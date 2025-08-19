@@ -25,6 +25,14 @@ export class TestcaseController {
         await TestcaseService.getTestcases(data, res);
     }
 
+    static getTestcase = async (req: Request, res: Response, next: NextFunction) => {
+        const testcaseId = req.params.testcaseId;
+        const data = await TestcaseService.getTestcase(testcaseId);
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully fetched the testcase", data)
+        );
+    }
+
     static getAllTestCases = async (req: Request, res: Response, next: NextFunction) => {
         const problemId = req.params.problemId;
         await TestcaseService.getAllTestcases(problemId, res)

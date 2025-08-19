@@ -4,7 +4,7 @@ import { TTestcase, TTestCaseEdit, TTestcaseFilter, TTestcases } from "../types/
 export class TestcaseRepository {
     static getTestcaseById = async (id: string) => {
         return await prisma.testCase.findFirst({ where: { id }, select: {
-            id: true, isSample: true, input: true, output: true, point: true, explanation: true
+            id: true, isSample: true, input: true, output: true, weight: true, explanation: true
         }})
     } 
 
@@ -25,7 +25,7 @@ export class TestcaseRepository {
                 problemId
             },
             select: {
-                id: true, isSample: true, input: true, output: true, point: true, explanation: true
+                id: true, isSample: true, input: true, output: true, weight: true, explanation: true
             }
         })
         return rawData;
@@ -35,7 +35,7 @@ export class TestcaseRepository {
         const result = await prisma.testCase.findMany({
             where,
             select: {
-                id: true, isSample: true, input: true, output: true, point: true, explanation: true
+                id: true, isSample: true, input: true, output: true, weight: true, explanation: true
             }
         });
         return result;

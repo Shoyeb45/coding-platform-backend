@@ -30,7 +30,7 @@ export const ZTestcase = z.object({
   input: z.string(),
   output: z.string(),
   isSample: z.boolean().default(false),
-  point: z.int32().default(0),
+  weight: z.int32().min(1, "Minimum weight to the testcase can be 1").max(5, "Maximum weight to the testcase can be 5").default(1),
   explanation: z.string().default("")
 });
 
@@ -46,7 +46,7 @@ export const ZTestcaseFilter = z.object({
 
 export const ZTestCaseEdit = z.object({
   isSample: z.boolean().optional(),
-  point: z.number().optional(),
+  weight: z.int32().min(1, "Minimum weight to the testcase can be 1").max(5, "Maximum weight to the testcase can be 5").optional(),
   explanation: z.string().optional()
 });
 

@@ -19,8 +19,10 @@ router.route("/:testcaseId")
 router.route("/")
     .post(validate(ZTestcases), asyncHandler(TestcaseController.createTestcases));
 
-router.route("/:problemId")
+router.route("/all/:problemId")
     .get(asyncHandler(TestcaseController.getAllTestCases));
+router.route("/:testcaseId")
+    .get(asyncHandler(TestcaseController.getTestcase));
 
 router.route("/sample/:problemId")
     .get(asyncHandler(TestcaseController.getSampleTestCase));
