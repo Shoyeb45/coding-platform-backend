@@ -2,7 +2,6 @@ import z from "zod";
 
 export const ZContestCreate = z.object({
     title: z.string().min(1, "The contest name should contain at least 1 character."),
-    createdBy: z.string().optional()
 });
 
 export const ZContest = z.object({

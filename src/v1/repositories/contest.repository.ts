@@ -7,10 +7,10 @@ import { TProblemCreate, TProblemFilter, TProblemModerator, TProblemUpdate } fro
 
 export class ContestRepository {
 
-    static create = async (data: TContestCreate) => {
+    static create = async (createdBy: string, data: TContestCreate) => {
 
         const createdContest = await prisma.contest.create({
-            data,
+            data: { ...data, createdBy },
             select: {
                 title: true, description: true, startTime: true, endTime: true
             }

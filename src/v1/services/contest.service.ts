@@ -22,9 +22,11 @@ export class ContestService {
         }
         // authenticate teacher
         this.authenticateTeacher(user);
-        contestInfo.createdBy = user?.sub;
+        if (!user?.sub) {
+            throw new ApiError("Teacher id not found");
+        }
 
-        const createdContest = await ContestRepository.create(contestInfo);
+        const createdContest = await ContestRepository.create(user.sub, contestInfo);
         if (!createdContest) {
             throw new ApiError("Failed to create a new contest, please try again", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
