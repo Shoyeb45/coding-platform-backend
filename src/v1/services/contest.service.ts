@@ -8,13 +8,21 @@ import { cleanObject } from "../../utils/cleanObject";
 
 
 export class ContestService {
-    static createContest = async (contestInfo: TContestCreate) => {
+    private static authenticateTeacher(user: Express.Request["user"]) {
+        if (user?.role !== "ASSISTANT_TEACHER" && user?.role !== "TEACHER") {
+            throw new ApiError("Only teachers are allowed to modify/create/delete contests.", HTTP_STATUS.UNAUTHORIZED);
+        }
+    }
+    static createContest = async (user: Express.Request["user"], contestInfo: TContestCreate) => {
         {
             const existing = await ContestRepository.getByTitle(contestInfo.title);
             if (existing) {
                 throw new ApiError("Title already exist in database, please enter different title");
             }
         }
+        // authenticate teacher
+        this.authenticateTeacher(user);
+        contestInfo.createdBy = user?.sub;
 
         const createdContest = await ContestRepository.create(contestInfo);
         if (!createdContest) {
@@ -23,28 +31,68 @@ export class ContestService {
         return createdContest;
     }
 
-    static deleteModerator = async (contestId: string, modData: TContestMod) => {
+    private static async authenticateModerator(moderatorId: string | undefined, contestId: string) {
+        if (!moderatorId) {
+            throw new ApiError("No teacher id found.", HTTP_STATUS.UNAUTHORIZED)
+        }
+        const mods = await ContestRepository.getAllModerators(contestId);
+        for (const mod of mods) {
+            if (mod.moderator.id === moderatorId) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private static checkContest = async (contestId: string) => {
+        const existingContest = await ContestRepository.getContestById(contestId);
+
+        if (!existingContest) {
+            throw new ApiError("No contest found with given id.", HTTP_STATUS.BAD_REQUEST);
+        }
+    } 
+
+    static deleteModerator = async (user: Express.Request["user"], contestId: string, modData: TContestMod) => {
+        this.authenticateTeacher(user);
         if (!contestId) {
             throw new ApiError("Contest id not found.", HTTP_STATUS.BAD_REQUEST);
         }
+        await this.checkContest(contestId);
+
+        if (!(await this.authenticateModerator(user?.sub, contestId))) {
+            throw new ApiError("Unauthorized access, you don't have access to delete this contest", HTTP_STATUS.UNAUTHORIZED);
+        }
+
         const deletedMod = await ContestRepository.deleteModerator(contestId, modData.moderatorId);
         if (!deletedMod) {
             throw new ApiError("Failed to delete moderator from contest.", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     }
     
-    static deleteProblemFromContest = async (contestId: string, problemId: string) => {
+    static deleteProblemFromContest = async (user: Express.Request["user"], contestId: string, problemId: string) => {
+        this.authenticateTeacher(user);
         if (!contestId) {
             throw new ApiError("No contest id found", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
+        await this.checkContest(contestId);
+        if (!(await this.authenticateModerator(user?.sub, contestId))) {
+            throw new ApiError("Unauthorized access, you don't have access to delete the problem from contest", HTTP_STATUS.UNAUTHORIZED);
+        }
+
         const deletedProblem = await ContestRepository.deleteProblem({ contestId, problemId });
         if (!deletedProblem) {
             throw new ApiError("Failed to delete problem from contest.", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
     }
-    static addModerator = async (contestId: string, modData: TContestMod) => {
+
+    static addModerator = async (user: Express.Request["user"], contestId: string, modData: TContestMod) => {
+        this.authenticateTeacher(user);
         if (!contestId) {
             throw new ApiError("Contest id not found.", HTTP_STATUS.BAD_REQUEST);
+        }
+        await this.checkContest(contestId);
+        if (!(await this.authenticateModerator(user?.sub, contestId))) {
+            throw new ApiError("Unauthorized access, you don't have access to add the moderators to the contest", HTTP_STATUS.UNAUTHORIZED);
         }
 
         const data = await ContestRepository.addModerator(contestId, modData);
