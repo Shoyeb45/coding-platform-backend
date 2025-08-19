@@ -104,5 +104,7 @@ codeRunnerWorker.on('failed', async (job, err) => {
   await RedisClient.getInstance().setForRun(job.data.runId, JSON.stringify({ status: "Failed" } ));
 });
 
+
+const submissionRunnerWorker = 
 // Start worker
 logger.info('🔄 Code execution worker started');

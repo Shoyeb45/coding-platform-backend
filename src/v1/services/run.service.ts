@@ -11,7 +11,7 @@ export class RunService {
     static run = async (data: TCustomRun) => {
         const runId = uuidv4();
         // fetch driver code
-        const driverCodes = await ProblemRepository.getDriverCodes(data.problemId)
+        const driverCodes = await ProblemRepository.getDriverCodes(data.problemId, data.languageId)
         if (!driverCodes?.prelude || !driverCodes?.driverCode) {
             throw new ApiError("No driver code found for given problem");
         } 

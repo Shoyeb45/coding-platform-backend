@@ -235,9 +235,9 @@ export class ProblemRepository {
         return createdDriverCode;
     }
 
-    static getDriverCodes = async (problemId: string) => {
+    static getDriverCodes = async (problemId: string, languageId: string) => {
         const rawData = await prisma.problemLanguage.findFirst({
-            where: { problemId },
+            where: { problemId, languageId },
             select: {
                 id: true,
                 language: {

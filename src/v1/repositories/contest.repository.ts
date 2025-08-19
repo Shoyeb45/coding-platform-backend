@@ -185,6 +185,25 @@ export class ContestRepository {
         return rawData;
     }
 
+    static getTimings = async (contestId: string) => {
+        return await prisma.contest.findFirst({
+            where: { id: contestId },
+            select: {
+                id: true, startTime: true, endTime: true
+            }
+        });
+    }
+    static getBatches = async (contestId: string) => {
+        return await prisma.batchContest.findMany({
+            where: { contestId }, select: {
+                batch: {
+                    select: {
+                        id: true, name: true
+                    }
+                }
+            }
+        })
+    }
     static getAllModerators = async (contestId: string) => {
         const rawData = await prisma.contestModerator.findMany({
             where: { contestId },

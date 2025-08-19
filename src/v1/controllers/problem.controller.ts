@@ -99,7 +99,8 @@ export class ProblemController {
 
     static getDriverCodes = async (req: Request, res: Response) => {
         const problemId = req.params.problemId;
-        const data = await ProblemService.getDriverCodes(problemId);
+        const languageId = req.query.languageId as string;
+        const data = await ProblemService.getDriverCodes(problemId, languageId);
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully fetched driver code for given problem.", data)
         )

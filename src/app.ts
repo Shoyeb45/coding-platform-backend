@@ -1,5 +1,5 @@
 // server.ts
-import express, {json, urlencoded } from "express";
+import express, { json, urlencoded } from "express";
 import helmet from "helmet";
 import { httpLogger } from "./middlewares/logger.middleware";
 import cookieParser from "cookie-parser";
@@ -21,34 +21,35 @@ declare global {
 }
 
 export function createHttpServer() {
-    const app = express();
+  const app = express();
 
-    app
-        .use(json())
-        .use(httpLogger)
-        .use(urlencoded())
-        .use(helmet())
-        .use(cookieParser())
-        .get("/", (req, res) => {
-            res.json({
-                "message": "Coding platform app is running",
-                success: true
-            })
-        })
-        .use(cors({
-          origin: "http://localhost:3000"
-        }))
-        .get("/health", (req, res) => {
-            res.json({
-                "message": "Coding platform app is running and it's healthy",
-                success: true
-            })
-        })
-
-
-
-    const PORT = process.env.PORT || 4000;
+  app
+    .use(json())
+    .use(httpLogger)
+    .use(urlencoded())
+    .use(helmet())
+    .use(cookieParser())
+    .get("/", (req, res) => {
+      res.json({
+        "message": "Coding platform app is running",
+        success: true
+      })
+    })
+    .use(cors({
+      origin: "http://localhost:3000",
+      credentials: true
+    }))
+    .get("/health", (req, res) => {
+      res.json({
+        "message": "Coding platform app is running and it's healthy",
+        success: true
+      })
+    })
 
 
-    return app; 
+
+  const PORT = process.env.PORT || 4000;
+
+
+  return app;
 }

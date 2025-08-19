@@ -23,7 +23,11 @@ export class RedisClient {
         await this.redis.set(runId, value, "EX", 300);
     }
 
-    public async getResult(runId: string) {
-        return await this.redis.get(runId);
+    public async getResult(key: string) {
+        return await this.redis.get(key);
+    }
+
+    public async setTestcase(problemId: string, value: string) {
+        await this.redis.set(problemId, value, "EX", 4 * 60 * 60); // 4 hours
     }
 }

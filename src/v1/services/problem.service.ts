@@ -236,12 +236,16 @@ export class ProblemService {
         return data;
     }
 
-    static getDriverCodes = async (problemId: string) => {
+    static getDriverCodes = async (problemId: string, languageId: string) => {
         if (!problemId) {
             throw new ApiError("Could not found problem Id", HTTP_STATUS.BAD_REQUEST);
         }
 
-        const data = await ProblemRepository.getDriverCodes(problemId);
+        if (!languageId) {
+            throw new ApiError("No language id found.", HTTP_STATUS.BAD_REQUEST);
+        }
+
+        const data = await ProblemRepository.getDriverCodes(problemId, languageId);
 
         if (!data) {
             throw new ApiError("Failed to find driver codes for the given problem");
