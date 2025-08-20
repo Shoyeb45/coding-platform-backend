@@ -235,7 +235,7 @@ export class ProblemRepository {
     }
 
     static addModerators = async (data: TProblemModerator) => {
-        const moderatorData = data.moderatorId.map((id) => ({problemId: data.problemId, moderatorId: id}));
+        const moderatorData = data.moderatorIds.map((id) => ({problemId: data.problemId, moderatorId: id}));
 
         const problemModerator = await prisma.problemModerator.createMany({
             data: moderatorData,
