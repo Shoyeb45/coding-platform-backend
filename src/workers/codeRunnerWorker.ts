@@ -48,7 +48,15 @@ export const codeRunnerWorker = new Worker<QueueDataType, CodeRunnerResult>(
           memory: result.memory,
           passed,
         });
-        await RedisClient.getInstance().setForRun(runId, JSON.stringify({ status: "Running", results }));
+        await RedisClient.getInstance().setForRun(runId, JSON.stringify({ 
+          status: "Running", 
+          result: {
+            runId,
+            totalTestCases: n, 
+            passedTestCases: passed,
+            results
+          }
+        }));
 
         // Update progress
         const progress = Math.round(((i + 1) / n) * 100);

@@ -1,13 +1,7 @@
 import { logger } from '../utils/logger';
-import { Worker, Job } from "bullmq";
-import { redisConfig } from '../config/queue.config';
 import { RedisClient } from '../utils/redisClient';
-import { SubmissionQueueType } from '../v1/types/submission.type';
 import { codeRunnerWorker } from './codeRunnerWorker';
 import { submissionRunnerWorker } from './submissionRunnerWorker';
-
-
-
 
 
 // custom run worker event handlers

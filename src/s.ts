@@ -1,9 +1,3 @@
 import { prisma } from "./utils/prisma";
+import { S3Service } from "./utils/s3client";
 
-prisma.student.findMany({
-    select: {
-        name: true, batch: {
-            select: {id: true, name: true}
-        }
-    }
-}).then((d) => {console.log(d)})

@@ -212,17 +212,19 @@ export class TestcaseService {
             throw new ApiError("No testcase found with given id.");
         }
 
-        if (data.problem.creator?.id !== teacherId) {
-            throw new ApiError("Unauthorized access, you are not allowed to perform changes on testcases.");
-        }
-        
+        let teacher = data.problem.creator?.id === teacherId;
+        let moderator = false;
         // now check moderators
         for (const mod of data.problem.problemModerators) {
             if (mod.id === teacherId) {
-                return;
+                moderator = true
+                break;
             }
+        
         }
-        throw new ApiError("Unauthorized access, you are not allowed to perform changes on testcases.");
+        if (!(teacher || moderator)) {
+            throw new ApiError("Unauthorized access, you are not allowed to perform changes on testcases.");
+        }
     }
 
     static removeTestcase = async (user: Express.Request["user"], testcaseId: string, res: Response) => {
