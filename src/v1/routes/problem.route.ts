@@ -174,7 +174,7 @@ router.route("/driver-code/:problemId")
  *   driverCode: string;
  *   id: string;
  *   language: { id: string; name: string; };
- * }
+ * }[]
  */
 router.route("/driver-code/:problemId")
     .get(asyncHandler(ProblemController.getDriverCodes));

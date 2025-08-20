@@ -79,7 +79,7 @@ export class SubmissionService {
         // Handle testcases and driver codes concurrently
         const [testcases, driverCodes] = await Promise.all([
             this.getOrFetchTestcases(submissionData.problemId),
-            ProblemRepository.getDriverCodes(submissionData.problemId, submissionData.languageId)
+            ProblemRepository.getDriverCode(submissionData.problemId, submissionData.languageId)
         ]);
 
         if (!driverCodes?.prelude || !driverCodes?.driverCode) {

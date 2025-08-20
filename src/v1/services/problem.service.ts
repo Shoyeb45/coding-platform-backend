@@ -262,11 +262,14 @@ export class ProblemService {
             throw new ApiError("Could not found problem Id", HTTP_STATUS.BAD_REQUEST);
         }
 
-        if (!languageId) {
-            throw new ApiError("No language id found.", HTTP_STATUS.BAD_REQUEST);
+        let driverData = { problemId };
+        // const data = await ProblemRepository.getDriverCodes(problemId, languageId);
+        let data;
+        if (languageId) {
+            data = await ProblemRepository.getDriverCodes({ languageId, problemId });
+        } else {
+            data = await ProblemRepository.getDriverCodes({ problemId });
         }
-
-        const data = await ProblemRepository.getDriverCodes(problemId, languageId);
 
         if (!data) {
             throw new ApiError("Failed to find driver codes for the given problem");

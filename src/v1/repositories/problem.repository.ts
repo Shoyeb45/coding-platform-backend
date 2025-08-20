@@ -24,24 +24,43 @@ export class ProblemRepository {
         return createdProblem;
     }
 
-    static getModerator = async (id: string) => {
-        return await prisma.problemModerator.findFirst({ where: { id }, select: { id: true, problem: {
+    static getDriverCode = async (problemId: string, languageId: string) => {
+        return await prisma.problemLanguage.findFirst({
+            where: { languageId, problemId },
             select: {
-                createdBy: true
+                id: true,
+                language: {
+                    select: {
+                        name: true, id: true
+                    }
+                }, prelude: true, driverCode: true, boilerplate: true
             }
-        }}});
+        })
+    }
+    static getModerator = async (id: string) => {
+        return await prisma.problemModerator.findFirst({
+            where: { id }, select: {
+                id: true, problem: {
+                    select: {
+                        createdBy: true
+                    }
+                }
+            }
+        });
     }
 
     static deleteDriverCodes = async (id: string) => {
-        return await prisma.problemLanguage.delete({ where: { id }, select: {
-            id: true, prelude: true, boilerplate: true, driverCode: true
-        }});
+        return await prisma.problemLanguage.delete({
+            where: { id }, select: {
+                id: true, prelude: true, boilerplate: true, driverCode: true
+            }
+        });
     }
 
     static deleteModerator = async (id: string) => {
-        return await prisma.problemModerator.delete({where: {id}});
+        return await prisma.problemModerator.delete({ where: { id } });
     }
- 
+
     static getProblemById = async (id: string) => {
         const rawData = await prisma.problem.findFirst({
             where: { id, isActive: true }, select: {
@@ -113,7 +132,7 @@ export class ProblemRepository {
     static updateProblem = async (id: string, data: TProblemUpdate) => {
         const updateProblem = await prisma.problem.update({
             data, where: { id }, select: {
-                id: true, title: true, problemStatement: true, constraints: true, difficulty: true,  problemWeight: true, testcaseWeight: true, isPublic: true, updatedAt: true, creator: {
+                id: true, title: true, problemStatement: true, constraints: true, difficulty: true, problemWeight: true, testcaseWeight: true, isPublic: true, updatedAt: true, creator: {
                     select: {
                         id: true,
                         email: true,
@@ -209,7 +228,7 @@ export class ProblemRepository {
 
     static addModerator = async (data: TProblemModerator) => {
         const problemModerator = await prisma.problemModerator.create({
-            data
+            data,
         });
         return problemModerator;
     };
@@ -247,9 +266,9 @@ export class ProblemRepository {
         return createdDriverCode;
     }
 
-    static getDriverCodes = async (problemId: string, languageId: string) => {
-        const rawData = await prisma.problemLanguage.findFirst({
-            where: { problemId, languageId },
+    static getDriverCodes = async (data: { problemId: string, languageId?: string }) => {
+        const rawData = await prisma.problemLanguage.findMany({
+            where: { ...data },
             select: {
                 id: true,
                 language: {
