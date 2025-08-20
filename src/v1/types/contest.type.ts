@@ -21,7 +21,7 @@ export const ZContestProblem = z.object({
 });
 
 export const ZContestMod = z.object({
-    moderatorId: z.string() 
+    moderatorIds: z.array(z.string()) 
 });
 
 export type TContestMod = z.infer<typeof ZContestMod>;

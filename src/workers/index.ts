@@ -25,14 +25,14 @@ codeRunnerWorker.on('failed', async (job, err) => {
 
 
 // submission worker event handlers
-submissionRunnerWorker.on('completed', async (job, results) => {
+submissionRunnerWorker.on('completed', async (job, result) => {
   // update the redis with status completed
   logger.info(`Submission with id: ${job.data.submissionId} successfully executed and evaluted.`);
   // update in redis
-  await RedisClient.getInstance().setForRun(job.data.problemId, JSON.stringify({
+  await RedisClient.getInstance().setForRun(job.data.submissionId, JSON.stringify({
     status: "Done",
-    results
-  }))
+    result: result.runnerResult
+  }));
   logger.info(`Redis client updated successfully for submission id : ${job.data.submissionId}`)
 });
 

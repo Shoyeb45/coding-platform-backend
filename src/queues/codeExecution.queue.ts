@@ -12,6 +12,7 @@ export const codeRunnerQueue = new Queue<QueueDataType>('code-execution', {
     ...queueConfig,
 });
 
+export const dbQueue = new Queue('database-operations', { connection: redisConfig, ...queueConfig });
 
 export const submissionQueue = new Queue<SubmissionQueueType>('submission-execution', {
     connection: redisConfig,

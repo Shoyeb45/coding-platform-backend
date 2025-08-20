@@ -95,10 +95,10 @@ export class ProblemService {
             logger.error(parsedData.error)
             throw new ApiError("Failed to parse query string", 500);
         }
-        parsedData.data.createdBy = teacherId;
 
         const problems = await ProblemRepository.getAllProblems(parsedData.data);
-        res.locals.data = { problems };
+        const updated = problems.map(problem => ({ isOwner: problem?.creator?.id === teacherId, ...problem}));
+        res.locals.data = { problems: updated };
         res.locals.success = true;
         res.locals.statusCode = 200;
         res.locals.message = "Successfully fetched all the problems."

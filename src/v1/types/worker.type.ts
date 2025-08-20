@@ -3,12 +3,27 @@ export interface CodeRunnerResult {
   totalTestCases: number;
   passedTestCases: number;
   results: Array<{
+    id?: string,
     status: string;
     output: string;
     compilerError?: string;
     runtimeError?: string;
     executionTime?: number;
     memory?: number;
+    weight?: number;
     passed: boolean;
   }>;
+}
+
+
+export interface SubmissionRunnerResult {
+  runnerResult: CodeRunnerResult,
+  metadata: {
+    problemId: string,
+    studentId: string,
+    contestId?: string,
+    languageId: string,
+    code: string,
+    submittedAt: string
+  }
 }

@@ -106,7 +106,7 @@ export class ProblemRepository {
 
         const rawProblems = await prisma.problem.findMany({
             select: {
-                id: true, title: true, problemStatement: true, constraints: true, difficulty: true, problemWeight: true, testcaseWeight: true, isPublic: true, updatedAt: true, creator: {
+                id: true, title: true, difficulty: true, isPublic: true, creator: {
                     select: {
                         id: true,
                         email: true,
@@ -124,7 +124,9 @@ export class ProblemRepository {
                     }
                 }
             },
-            where
+            where: {
+                isActive: true
+            }
         })
 
 

@@ -48,7 +48,6 @@ export const ZProblemFilter = z.object({
     (val) => (val === "true" ? true : val === "false" ? false : val),
     z.boolean().optional().default(false)
   ),
-  createdBy: z.string().optional(),
   difficulty: z.preprocess(
     (val) => (typeof val === "string" ? val : undefined),
     z.enum(["Easy", "Medium", "Hard"]).optional()

@@ -99,7 +99,8 @@ export class SubmissionService {
             problemId: submissionData.problemId,
             contestId: submissionData.contestId,
             code: submissionData.code,
-            testcases: JSON.parse(testcases)
+            testcases: JSON.parse(testcases),
+            submittedAt: submissionData.submissionTime
         };
 
         submissionQueue.add("submission-execute", data);

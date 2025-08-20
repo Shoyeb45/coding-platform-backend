@@ -37,7 +37,6 @@ export async function executeCodeWithJudge0(request: Judge0ExecutionRequest): Pr
         timeout: 30000, // 30 second timeout
       }
     );
-    console.log(response.data)
     const submission = response.data;
 
     return {
