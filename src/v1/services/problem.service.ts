@@ -207,8 +207,10 @@ export class ProblemService {
             throw new ApiError("Failed to assign moderator to the problem", 500);
         }
 
+        const moderators = await ProblemRepository.getModerators(data.problemId);
+
         res.status(201).json(
-            new ApiResponse(`Moderator added successfully.`, {})
+            new ApiResponse(`Moderator added successfully.`, { moderators })
         );
     }
 

@@ -250,6 +250,7 @@ export class ProblemRepository {
                 problemId
             },
             select: {
+                id: true,
                 moderator: {
                     select: {
                         id: true, name: true, email: true, designation: true
