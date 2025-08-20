@@ -266,7 +266,21 @@ export class ContestService {
 
         return contests.map(contest => ({...contest, tags: contest.tags.map(tag => ({...tag.tag})), allowedLanguages: contest.allowedLanguages.map((lang) => ({ ...lang.language}))}))
     }
-}
+
+    static getPastContests = async (user: Express.Request["user"]) => {
+        this.authenticateTeacher(user);
+        if (!user?.id) {
+            throw new ApiError("No teacher id found for getting all the contest", HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        }
+
+        const contests = await ContestRepository.getPastContests(user.id);
+        if (!contests) {
+            throw new ApiError("Failed to fetch past contests.");
+        }
+        return contests;
+    }
+} 
+
 
 
 type UpdateData = {

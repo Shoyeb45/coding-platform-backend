@@ -41,9 +41,33 @@ router.use(authenticateUser);
 router.route("/")
     .post(validate(ZContestCreate), asyncHandler(ContestController.createContest));
 
+
+/**
+ * GET /past
+ * @description API to get past contests
+ * data: {
+ *   contests: {
+        tags: {
+            id: string;
+            name: string;
+        }[];
+        allowedLanguages: {
+            id: string;
+            name: string;
+        }[];
+        title: string;
+        description: string;
+        startTime: Date;
+        endTime: Date;
+        id: string;
+    }[]
+ * }
+ */
+router.route("/past")
+    .get(asyncHandler(ContestController.getPastContests));
 /**
  * GET /
- * @description Get all contests of the teacher
+ * @description Get all contests upcoming and live contests of the teacher
  * @returns 
  * data: {
  *   contests: {

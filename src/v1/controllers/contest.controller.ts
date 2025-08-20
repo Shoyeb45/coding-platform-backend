@@ -56,6 +56,13 @@ export class ContestController {
             new ApiResponse("Successfully fetched all moderators of the contest.", { moderators: data })
         );
     }
+
+    static getPastContests = async (req: Request, res: Response) => {
+        const contests = await ContestService.getPastContests(req.user);
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully fetched past contests", { contests })
+        );
+    }
     static createContest = async (req: Request, res: Response): Promise<void> => {
         const contestDetail = await ContestService.createContest(req.user, req.body);
 

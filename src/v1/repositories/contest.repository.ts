@@ -148,7 +148,12 @@ export class ContestRepository {
 
     static getContestsForUser = async (createdBy: string) => {
         const rawData = await prisma.contest.findMany({
-            where: { createdBy },
+            where: { 
+                createdBy,
+                endTime: {
+                    gt: new Date()
+                }
+            },
             select: {
                 id: true, title: true, description: true, startTime: true, endTime: true, tags: {
                     select: {
@@ -167,7 +172,34 @@ export class ContestRepository {
         });
         return rawData;
     }
+    
+    static getPastContests = async (createdBy: string) => {
+        const rawData = await prisma.contest.findMany({
+            where: { 
+                createdBy,
+                endTime: {
+                    lt: new Date()
+                }
+            },
+            select: {
+                id: true, title: true, description: true, startTime: true, endTime: true, tags: {
+                    select: {
+                        tag: {
+                            select: { id: true, name: true }
+                        }
+                    }
+                }, allowedLanguages: {
+                    select: {
+                        language: {
+                            select: { id: true, name: true }
+                        }
+                    }
+                }
+            }
+        });
+        return rawData;
 
+    }
     static getTimings = async (contestId: string) => {
         return await prisma.contest.findFirst({
             where: { id: contestId },
