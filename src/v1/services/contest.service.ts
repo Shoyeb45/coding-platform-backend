@@ -22,11 +22,11 @@ export class ContestService {
         }
         // authenticate teacher
         this.authenticateTeacher(user);
-        if (!user.id) {
+        if (!user?.id) {
             throw new ApiError("Teacher id not found");
         }
 
-        const createdContest = await ContestRepository.create(user.id, contestInfo);
+        const createdContest = await ContestRepository.create(user?.id, contestInfo);
         if (!createdContest) {
             throw new ApiError("Failed to create a new contest, please try again", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
@@ -66,7 +66,7 @@ export class ContestService {
             throw new ApiError("Contest id not found.", HTTP_STATUS.BAD_REQUEST);
         }
 
-        if (!(await this.checkContest(user.id, contestId))) {
+        if (!(await this.checkContest(user?.id, contestId))) {
             throw new ApiError("Unauthorized access, you don't have access to delete this contest", HTTP_STATUS.UNAUTHORIZED);
         }
 
@@ -82,7 +82,7 @@ export class ContestService {
             throw new ApiError("No contest id found", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
 
-        if (!(await this.checkContest(user.id, contestId))) {
+        if (!(await this.checkContest(user?.id, contestId))) {
             throw new ApiError("Unauthorized access, you don't have access to delete the problem from contest", HTTP_STATUS.UNAUTHORIZED);
         }
 
@@ -98,7 +98,7 @@ export class ContestService {
             throw new ApiError("Contest id not found.", HTTP_STATUS.BAD_REQUEST);
         }
     
-        if (!(await this.checkContest(user.id, contestId))) {
+        if (!(await this.checkContest(user?.id, contestId))) {
             throw new ApiError("Unauthorized access, you don't have access to add the moderators to the contest", HTTP_STATUS.UNAUTHORIZED);
         }
 
@@ -117,7 +117,7 @@ export class ContestService {
             throw new ApiError("No contest id found", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
 
-        if (!(await this.checkContest(user.id, contestId))) {
+        if (!(await this.checkContest(user?.id, contestId))) {
             throw new ApiError("Unauthorized access, you don't have access to see the moderators of the contest", HTTP_STATUS.UNAUTHORIZED);
         }
 
@@ -131,7 +131,7 @@ export class ContestService {
             throw new ApiError("No contest id found.", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
         
-        if (!(await this.checkContest(user.id, contestId))) {
+        if (!(await this.checkContest(user?.id, contestId))) {
             throw new ApiError("Unauthorized access, you don't have access to update the contest", HTTP_STATUS.UNAUTHORIZED);
         }
 
@@ -206,8 +206,8 @@ export class ContestService {
             throw new ApiError("No contest found with given id.", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
         {
-            let teacher = data.creator.id === user.id;
-            let mod = await this.authenticateModerator(user.id, contestId);
+            let teacher = data.creator.id === user?.id;
+            let mod = await this.authenticateModerator(user?.id, contestId);
             if (!(mod || teacher)) {
                 throw new ApiError("Unauthorized access, you don't have access to see the contest data.", HTTP_STATUS.UNAUTHORIZED);
             }
@@ -219,7 +219,7 @@ export class ContestService {
     static addProblemToContest = async (user: Express.Request["user"], contestId: string, data: TContestProblem) => {
         this.authenticateTeacher(user);
 
-        if (!(await this.checkContest(user.id, contestId))) {
+        if (!(await this.checkContest(user?.id, contestId))) {
             throw new ApiError("Unauthorized access, you don't have access to add the problem to the contest", HTTP_STATUS.UNAUTHORIZED);
         }
 
@@ -248,10 +248,10 @@ export class ContestService {
 
     static getContests = async (user: Express.Request["user"]) => {
         this.authenticateTeacher(user);
-        if (!user.id) {
+        if (!user?.id) {
             throw new ApiError("No teacher id found for getting all the contest", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-        const contests = await ContestRepository.getContestsForUser(user.id);
+        const contests = await ContestRepository.getContestsForUser(user?.id);
 
         if (!contests) {
             throw new ApiError("Failed to find the contests.");

@@ -12,7 +12,7 @@ import { ProblemRepository } from "../repositories/problem.repository";
 
 export class TestcaseService {
     private static authenticateTeacher = (user: Express.Request["user"]) => {
-        if (!user.id) {
+        if (!user?.id) {
             throw new ApiError("No teacher id found");
         }
 
@@ -56,7 +56,7 @@ export class TestcaseService {
         if (!problemId.trim()) {
             throw new ApiError("Couldn't find id of the problem to upload the testcases.", HTTP_STATUS.NOT_FOUND);
         }
-        if (!(await this.checkProblem(user.id, problemId))) {
+        if (!(await this.checkProblem(user?.id, problemId))) {
             throw new ApiError("Unauthorized access, you are not allowed to generate presigned url for given problem.", HTTP_STATUS.UNAUTHORIZED);
         }
 
@@ -83,7 +83,7 @@ export class TestcaseService {
         if (!problemId.trim()) {
             throw new ApiError("Couldn't find id of the problem to upload the testcases.", HTTP_STATUS.NOT_FOUND);
         }
-        if (!(await this.checkProblem(user.id, problemId))) {
+        if (!(await this.checkProblem(user?.id, problemId))) {
             throw new ApiError("Unauthorized access, you are not allowed to generate presigned url for given problem.", HTTP_STATUS.UNAUTHORIZED);
         }
 
@@ -117,7 +117,7 @@ export class TestcaseService {
             throw new ApiError("No testcases found to upload in database.");
         }
         this.authenticateTeacher(user);
-        if (!(await this.checkProblem(user.id, testcasesData.testcases[0].problemId))) {
+        if (!(await this.checkProblem(user?.id, testcasesData.testcases[0].problemId))) {
             throw new ApiError("Unauthorized access, you are not allowed to create testcases in database.", HTTP_STATUS.UNAUTHORIZED);
         }
 
@@ -162,7 +162,7 @@ export class TestcaseService {
         if (!problemId) {
             throw new ApiError("No problem id found", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-        if (!(await this.checkProblem(user.id, problemId))) {
+        if (!(await this.checkProblem(user?.id, problemId))) {
             throw new ApiError("Unauthorized access, you are not allowed to see all the hidden testcases.", HTTP_STATUS.UNAUTHORIZED);
         }
         
@@ -231,7 +231,7 @@ export class TestcaseService {
             throw new ApiError("No testcase id found.", HTTP_STATUS.BAD_REQUEST);
         }
 
-        await this.checkTestcase(user.id, testcaseId);
+        await this.checkTestcase(user?.id, testcaseId);
 
         const removedTestcase = await TestcaseRepository.remove(testcaseId);
         if (!removedTestcase) {
@@ -277,7 +277,7 @@ export class TestcaseService {
         if (!testcaseId) {
             throw new ApiError("No testcase id found.", HTTP_STATUS.BAD_REQUEST);
         }
-        await this.checkTestcase(user.id, testcaseId);
+        await this.checkTestcase(user?.id, testcaseId);
 
         const testcases = await TestcaseRepository.update(testcaseId, cleanObject(testcaseInfo));
 

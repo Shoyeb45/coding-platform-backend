@@ -23,10 +23,11 @@ export function authenticateUser(req: Request, res: Response, next: NextFunction
             throw new ApiError("User authentication failed.", HTTP_STATUS.UNAUTHORIZED);
         }
         req.user = {
-            sub: payload.sub ?? "unknown",
+            id: payload.sub ?? "unknown",
             email: payload.email,
             name: payload.name,
             role: payload.role as UserRole,
+            phone: payload.phone,
             ...(payload.designation !== undefined && { designation: payload.designation })
         };
         next();

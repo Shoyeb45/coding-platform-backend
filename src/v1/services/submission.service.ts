@@ -48,7 +48,7 @@ export class SubmissionService {
 
     static createSubmission = async (user: Express.Request["user"], submissionData: TSubmission) => {
         // Early validation
-        if (!user.id) {
+        if (!user?.id) {
             throw new ApiError("No id associated with user found", HTTP_STATUS.UNAUTHORIZED);
         }
 
@@ -65,7 +65,7 @@ export class SubmissionService {
         // Run validations concurrently where possible
         const [isLive, isParticipant] = await Promise.all([
             this.isLiveContest(submissionData.contestId, submissionData.submissionTime),
-            this.isParticipant(user.id, submissionData.contestId)
+            this.isParticipant(user?.id, submissionData.contestId)
         ]);
 
         if (!isLive) {
@@ -92,7 +92,7 @@ export class SubmissionService {
   
 
         const data: SubmissionQueueType = {
-            studentId: user.id,
+            studentId: user?.id,
             submissionId,
             languageCode: submissionData.languageCode,
             languageId: submissionData.languageId,

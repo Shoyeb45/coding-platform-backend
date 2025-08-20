@@ -7,3 +7,4 @@ testcases
 testcaseGenerator.js
 uploadInAWS.js
 links
+tsconfig.tsbuildinfo

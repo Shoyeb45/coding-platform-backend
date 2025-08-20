@@ -11,7 +11,7 @@ export class ProblemController {
     static createProblem = async (req: Request, res: Response, next: NextFunction) => {
         logger.info("Requesting to create a new problem, title: " + req.body.title);
         const data = req.body;
-        data.createdBy = req.user.id;
+        data.createdBy = req.user?.id;
 
         if (req.user?.role !== "TEACHER" && req.user?.role !== "ASSISTANT_TEACHER") {
             throw new ApiError("Unauthorised access, only teacher or assistant teacher is allowed to create a question");
@@ -27,7 +27,7 @@ export class ProblemController {
             throw new ApiError("Only teacher can add moderators to the problem", HTTP_STATUS.UNAUTHORIZED);
         }
         const id = req.params.id;
-        await ProblemService.updateProblem(req.user.id, id, req.body, res);
+        await ProblemService.updateProblem(req.user?.id, id, req.body, res);
         next();
     }
 
@@ -41,14 +41,14 @@ export class ProblemController {
 
         const id = req.params.id;
 
-        await ProblemService.getProblemById(req.user.id, id, res);
+        await ProblemService.getProblemById(req.user?.id, id, res);
         next();
     }
 
     static getAllProblems = async (req: Request, res: Response, next: NextFunction) => {
         const parsedData = ZProblemFilter.safeParse(req.query);
 
-        await ProblemService.getAllProblems(req.user.id, parsedData, res);
+        await ProblemService.getAllProblems(req.user?.id, parsedData, res);
         next();
     }
 
@@ -63,7 +63,7 @@ export class ProblemController {
 
     static getAllProblemsOfCreator = async (req: Request, res: Response, next: NextFunction) => {
 
-        const creatorId = req.user.id;
+        const creatorId = req.user?.id;
         await ProblemService.getProblemsOfCreator(creatorId, res);
 
         res.status(res.locals.statusCode).json({
@@ -79,14 +79,14 @@ export class ProblemController {
             throw new ApiError("Only teacher can add moderators to the problem", HTTP_STATUS.UNAUTHORIZED);
         }
         const id = req.params.id;
-        await ProblemService.removeProblem(req.user.id, id, res);
+        await ProblemService.removeProblem(req.user?.id, id, res);
     }
 
     static addModeratorsToProblem = async (req: Request, res: Response, next: NextFunction) => {
         if (req.user?.role !== "ASSISTANT_TEACHER" && req.user?.role !== "TEACHER") {
             throw new ApiError("Only teacher can add moderators to the problem", HTTP_STATUS.UNAUTHORIZED);
         }
-        await ProblemService.addModeratorsToProblem(req.user.id, req.body, res);
+        await ProblemService.addModeratorsToProblem(req.user?.id, req.body, res);
     }
 
     static ProblemController = async (req: Request, res: Response) => {
@@ -102,7 +102,7 @@ export class ProblemController {
             throw new ApiError("Only teacher can add moderators to the problem", HTTP_STATUS.UNAUTHORIZED);
         }
         const problemId = req.params.problemId;
-        const data = await ProblemService.addDriverCode(req.user.id, problemId, req.body);
+        const data = await ProblemService.addDriverCode(req.user?.id, problemId, req.body);
         res.status(HTTP_STATUS.CREATED).json(
             new ApiResponse("Successfully added driver code for given problem", data)
         )
@@ -132,7 +132,7 @@ export class ProblemController {
             throw new ApiError("Only teacher can add moderators to the problem", HTTP_STATUS.UNAUTHORIZED);
         }
         const id = req.params.id;
-        const data = await ProblemService.updateDriverCode(req.user.id, id, req.body);
+        const data = await ProblemService.updateDriverCode(req.user?.id, id, req.body);
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully updated driver code for given problem.", data)
         );
