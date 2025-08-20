@@ -61,6 +61,14 @@ export class ProblemRepository {
         return await prisma.problemModerator.delete({ where: { id } });
     }
 
+    static getScoreById = async (id: string) => {
+        return await prisma.problem.findFirst({
+            where: { id },
+            select: {
+                testcaseWeight: true, problemWeight: true
+            }
+        });
+    }
     static getProblemById = async (id: string) => {
         const rawData = await prisma.problem.findFirst({
             where: { id, isActive: true }, select: {
@@ -226,9 +234,12 @@ export class ProblemRepository {
         return problems;
     }
 
-    static addModerator = async (data: TProblemModerator) => {
-        const problemModerator = await prisma.problemModerator.create({
-            data,
+    static addModerators = async (data: TProblemModerator) => {
+        const moderatorData = data.moderatorId.map((id) => ({problemId: data.problemId, moderatorId: id}));
+
+        const problemModerator = await prisma.problemModerator.createMany({
+            data: moderatorData,
+            skipDuplicates: true
         });
         return problemModerator;
     };

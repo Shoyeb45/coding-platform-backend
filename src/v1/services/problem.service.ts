@@ -202,7 +202,7 @@ export class ProblemService {
             throw new ApiError("Teacher id not found.", HTTP_STATUS.UNAUTHORIZED);
         }
         await this.checkProblem(data.problemId, teacherId);
-        const moderator = await ProblemRepository.addModerator(data);
+        const moderator = await ProblemRepository.addModerators(data);
         if (!moderator) {
             throw new ApiError("Failed to assign moderator to the problem", 500);
         }
