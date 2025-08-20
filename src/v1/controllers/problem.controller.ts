@@ -120,8 +120,8 @@ export class ProblemController {
         if (req.user?.role !== "ASSISTANT_TEACHER" && req.user?.role !== "TEACHER") {
             throw new ApiError("Only teacher can add moderators to the problem", HTTP_STATUS.UNAUTHORIZED);
         }
-        const problemId = req.params.problemId;
-        const data = await ProblemService.updateDriverCode(req.user?.sub, problemId, req.body);
+        const id = req.params.id;
+        const data = await ProblemService.updateDriverCode(req.user?.sub, id, req.body);
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully updated driver code for given problem.", data)
         );

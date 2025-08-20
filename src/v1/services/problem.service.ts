@@ -254,15 +254,15 @@ export class ProblemService {
         return data;
     }
 
-    static updateDriverCode = async (teacherId: string | undefined, problemId: string, driverCodeData: TProblemDriverUpdate) => {
+    static updateDriverCode = async (teacherId: string | undefined, id: string, driverCodeData: TProblemDriverUpdate) => {
         if (!teacherId) {
             throw new ApiError("No teacher id found.");
         }
-        if (!problemId) {
+        if (!id) {
             throw new ApiError("Could not found problem Id", HTTP_STATUS.BAD_REQUEST);
         }
-        await this.checkProblem(problemId, teacherId);
-        const data = await ProblemRepository.updateDriverCode(problemId, driverCodeData);
+        // await this.checkProblem(problemId, teacherId);
+        const data = await ProblemRepository.updateDriverCode(id, driverCodeData);
 
         if (!data) {
             throw new ApiError("Failed to update driver codes for the given problem");
