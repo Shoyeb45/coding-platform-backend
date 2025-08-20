@@ -35,7 +35,7 @@ export const ZProblem = z.object({
 
 export const ZProblemModerator = z.object({
   problemId: z.string(),
-  moderatorId: z.string()
+  moderatorId: z.array(z.string())
 });
 
 
