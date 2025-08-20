@@ -31,11 +31,11 @@ export class ContestController {
         );
     }
     static deleteModerator = async (req: Request, res: Response) => {
-        const contestId = req.params.contestId;
-        await ContestService.deleteModerator(req.user, contestId, req.body);
+        const moderatorId = req.params.moderatorId;
+        const deleteModerator = await ContestService.deleteModerator(req.user, moderatorId);
         res.status(HTTP_STATUS.CREATED).json(
-            new ApiResponse("Successfully deleted moderator from the contest.", {})
-        )
+            new ApiResponse("Successfully deleted moderator from the contest.", { deleteModerator })
+        );
     } 
 
     

@@ -263,17 +263,13 @@ router.route("/moderators/:contestId")
     .get(asyncHandler(ContestController.getAllModerators));
 
 /**
- * DELETE /moderators/:contestId
+ * DELETE /moderators/:moderatorId
  * @description API to get delete the moderator from the contest
- * @param contestId id of the contest 
- * @body
- * {
- *    moderatorId: string
- * }
+ * @param moderatorId id of the contest 
  * @returns
  *  data: { }
  */
 router.route("/moderators/:contestId")
-    .delete(validate(ZContestMod), asyncHandler(ContestController.deleteModerator));
+    .delete(asyncHandler(ContestController.deleteModerator));
 
 export default router;

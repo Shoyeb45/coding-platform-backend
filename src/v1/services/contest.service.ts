@@ -5,6 +5,7 @@ import { ContestRepository } from "../repositories/contest.repository";
 import { ApiError } from "../../utils/ApiError";
 import { HTTP_STATUS } from "../../config/httpCodes";
 import { cleanObject } from "../../utils/cleanObject";
+import { ProblemRepository } from "../repositories/problem.repository";
 
 
 export class ContestService {
@@ -60,20 +61,16 @@ export class ContestService {
         return teacher || moderator;
     }
 
-    static deleteModerator = async (user: Express.Request["user"], contestId: string, modData: TContestMod) => {
+    static deleteModerator = async (user: Express.Request["user"], moderatorId: string) => {
         this.authenticateTeacher(user);
-        if (!contestId) {
-            throw new ApiError("Contest id not found.", HTTP_STATUS.BAD_REQUEST);
-        }
-
-        if (!(await this.checkContest(user?.id, contestId))) {
-            throw new ApiError("Unauthorized access, you don't have access to delete this contest", HTTP_STATUS.UNAUTHORIZED);
-        }
-
-        const deletedMod = await ContestRepository.deleteModerator(contestId, modData.moderatorId);
+        if (!moderatorId) {
+            throw new ApiError("No moderator id not found.", HTTP_STATUS.BAD_REQUEST);
+        }     
+        const deletedMod = await ContestRepository.deleteModerator(moderatorId);
         if (!deletedMod) {
             throw new ApiError("Failed to delete moderator from contest.", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
+        return deletedMod;
     }
 
     static deleteProblemFromContest = async (user: Express.Request["user"], contestId: string, problemId: string) => {
@@ -102,12 +99,13 @@ export class ContestService {
             throw new ApiError("Unauthorized access, you don't have access to add the moderators to the contest", HTTP_STATUS.UNAUTHORIZED);
         }
 
-        const data = await ContestRepository.addModerator(contestId, modData);
+        const data = await ContestRepository.addModerators(contestId, modData);
         if (!data) {
             throw new ApiError("Failed to add moderator to the contest", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
 
-        return data;
+        const moderators = await ContestRepository.getAllModerators(contestId);
+        return moderators.map((mod) => ({ moderatorId: mod.id, ...mod.moderator }));
     }
 
     static getAllModerators = async (user: Express.Request["user"], contestId: string) => {
@@ -122,7 +120,7 @@ export class ContestService {
         }
 
         const mods = await ContestRepository.getAllModerators(contestId);
-        return mods.map(mod => ({ ...mod.moderator }))
+        return mods.map(mod => ({ moderatorId: mod.id, ...mod.moderator }))
     }
 
     static updateContest = async (user: Express.Request["user"], contestId: string, contestInfo: TContest) => {

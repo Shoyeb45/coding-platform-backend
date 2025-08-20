@@ -68,12 +68,9 @@ export class ContestRepository {
         return rawData;
     }
 
-    static deleteModerator = async (contestId: string, moderatorId: string) => {
-        const deletedMod = await prisma.contestModerator.deleteMany({
-            where: {
-                contestId: contestId,
-                moderatorId: moderatorId
-            }
+    static deleteModerator = async (id: string) => {
+        const deletedMod = await prisma.contestModerator.delete({
+            where: { id }
         });
         return deletedMod;
     }
@@ -208,6 +205,7 @@ export class ContestRepository {
         const rawData = await prisma.contestModerator.findMany({
             where: { contestId },
             select: {
+                id: true,
                 moderator: {
                     select: { id: true, name: true, email: true, designation: true }
                 }
@@ -216,18 +214,11 @@ export class ContestRepository {
         return rawData;
     }
 
-    static addModerator = async (contestId: string, data: TContestMod) => {
-        return await prisma.contestModerator.create({
-            data: {
-                contestId, moderatorId: data.moderatorId
-            },
-            select: {
-                moderator: {
-                    select: {
-                        name: true, id: true, email: true, designation: true
-                    }
-                }
-            }
+    static addModerators = async (contestId: string, data: TContestMod) => {
+        const mods = data.moderatorIds.map((id) => ({ contestId, moderatorId: id }));
+
+        return await prisma.contestModerator.createMany({
+            data: mods,
         });
     }
 }   
