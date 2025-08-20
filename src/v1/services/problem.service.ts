@@ -154,7 +154,7 @@ export class ProblemService {
             if (!existing) {
                 throw new ApiError("No moderator exist with given id.");
             }
-            if (existing.problem.createdBy !== user.sub) {
+            if (existing.problem.createdBy !== user.id) {
                 throw new ApiError("Unauthorized access, you are not allowed to remove the moderator.");
             }
         }
@@ -180,15 +180,15 @@ export class ProblemService {
         if (!problemId) {
             throw new ApiError("No problem id found", HTTP_STATUS.BAD_REQUEST);
         }
-        if (!user?.sub) {
+        if (!user.id) {
             throw new ApiError("No teacher id found");
         }
 
         if (user.role !== "TEACHER" && user.role !== "ASSISTANT_TEACHER") {
             throw new ApiError("Unauthorized access, your are not allowed to perform changes.");
         }
-        await this.checkProblem(problemId, user.sub);
-        await this.authenticateModerator(user.sub, problemId);
+        await this.checkProblem(problemId, user.id);
+        await this.authenticateModerator(user.id, problemId);
 
         const data = await ProblemRepository.deleteDriverCodes(id);
         if (!data) {

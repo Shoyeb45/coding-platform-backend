@@ -3,19 +3,13 @@ import express, { json, urlencoded } from "express";
 import helmet from "helmet";
 import { httpLogger } from "./middlewares/logger.middleware";
 import cookieParser from "cookie-parser";
-import { UserRole } from "./types/auth.type";
+import { AuthUser, UserRole } from "./types/auth.type";
 import cors from "cors";
 
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        sub: string;
-        email: string;
-        name: string;
-        role: UserRole;
-        designation?: string;
-      };
+      user?: AuthUser
     }
   }
 }

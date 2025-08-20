@@ -5,7 +5,7 @@ import { TLanguageCreate } from "../types/programmingLanguage.type";
 
 export class LanguageService {
     private static authenticateTeacher = (user: Express.Request["user"]) => {
-        if (!user?.sub) {
+        if (!user.id) {
             throw new ApiError("No teacher id found");
         }
 
