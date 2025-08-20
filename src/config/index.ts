@@ -23,6 +23,7 @@ export const config = {
     redisPassword: process.env.REDIS_PASSWORD,
 
     // jwt secret
-    jwtSecret: process.env.JWT_SECRET || "My Jwt Secret"
+    jwtAccessSecret: process.env.JWT_ACCESS_SECRET || "My Jwt Secret",
+    jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || "My Jwt Secret"
 }
 
