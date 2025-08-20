@@ -209,8 +209,9 @@ export class ProblemService {
 
         const moderators = await ProblemRepository.getModerators(data.problemId);
 
+        const mods = moderators.map(mod => ({ moderatorId: mod.id, ...mod.moderator }));
         res.status(201).json(
-            new ApiResponse(`Moderator added successfully.`, { moderators })
+            new ApiResponse(`Moderator added successfully.`, { moderators: mods })
         );
     }
 
@@ -223,7 +224,7 @@ export class ProblemService {
         if (!rawData) {
             throw new ApiError("Failed to retireve moderators", 500);
         }
-        const moderators = rawData.map(mod => ({ ...mod.moderator }));
+        const moderators = rawData.map(mod => ({ moderatorId: mod.id, ...mod.moderator }));
 
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully fetched all moderators.", { moderators })
