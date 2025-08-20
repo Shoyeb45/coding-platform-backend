@@ -1,13 +1,17 @@
 import { HTTP_STATUS } from "../../config/httpCodes";
+import { submissionQueue } from "../../queues/codeExecution.queue";
 import { ApiError } from "../../utils/ApiError";
+import { logger } from "../../utils/logger";
 import { RedisClient } from "../../utils/redisClient";
 import { S3Service } from "../../utils/s3client";
 import { ContestRepository } from "../repositories/contest.repository";
 import { ProblemRepository } from "../repositories/problem.repository";
 import { StudentRepository } from "../repositories/student.repository";
 import { TestcaseRepository } from "../repositories/testcase.repository";
-import { TestcaseData, TSubmission } from "../types/submission.type";
-
+import { Judge0ExecutionResult } from "../types/judge0.type";
+import { RedisSubmission } from "../types/queue.type";
+import { SubmissionQueueType, TestcaseData, TSubmission } from "../types/submission.type";
+import { v4 as uuidv4 } from "uuid";
 
 
 export class SubmissionService {
@@ -84,11 +88,44 @@ export class SubmissionService {
 
         // Concatenate code
         submissionData.code = `${driverCodes.prelude}\n\n${submissionData.code}\n\n${driverCodes.driverCode}`;
+        const submissionId = uuidv4();
+  
 
-        // Return or continue with submission processing
-        return { testcases, submissionData };
+        const data: SubmissionQueueType = {
+            studentId: user.sub,
+            submissionId,
+            languageCode: submissionData.languageCode,
+            languageId: submissionData.languageId,
+            problemId: submissionData.problemId,
+            contestId: submissionData.contestId,
+            code: submissionData.code,
+            testcases: JSON.parse(testcases)
+        };
+
+        submissionQueue.add("submission-execute", data);
+        try {
+            await RedisClient.getInstance().setForRun(submissionId, JSON.stringify({ status: "Queued" }));
+        } catch (error) {
+            logger.warn("Setting the queue in redis failed")
+        }
+        return submissionId;
     }
 
+    static getActiveSubmission = async (submissionId: string) => {
+        if (!submissionId) {
+            throw new ApiError("Submission id not found.", HTTP_STATUS.BAD_REQUEST)
+        }
+    
+        let value = await RedisClient.getInstance().getResult(submissionId);
+        if (!value) {
+            throw new ApiError("No active submission found with given id");
+        }
+        const data: RedisSubmission = JSON.parse(value);
+        if (data.status === "Failed") {
+            throw new ApiError("Submission failed due to internal server issues, please try once more.");
+        }
+        return data;
+    }
     private static getOrFetchTestcases = async (problemId: string): Promise<string> => {
         // Try to get from Redis first
         let testcases = await RedisClient.getInstance().getResult(problemId);
@@ -109,7 +146,7 @@ export class SubmissionService {
         try {
             await RedisClient.getInstance().setTestcase(problemId, testcases);
         } catch (error) {
-            console.warn(`Failed to cache testcases in Redis for problem ${problemId}:`, error);
+            logger.warn(`Failed to cache testcases in Redis for problem ${problemId}: ${error}`);
             // Continue execution even if Redis fails
         }
 

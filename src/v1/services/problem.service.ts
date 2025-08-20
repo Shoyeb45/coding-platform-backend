@@ -85,6 +85,7 @@ export class ProblemService {
         return;
     }
 
+
     static getAllProblems = async (teacherId: string | undefined, parsedData: ZodSafeParseResult<TProblemFilter>, res: Response) => {
         if (!teacherId) {
             throw new ApiError("Teacher id not found", HTTP_STATUS.UNAUTHORIZED);
@@ -144,6 +145,26 @@ export class ProblemService {
         );
     }
 
+    static deleteModeratorFromProblem = async (user: Express.Request["user"], id: string) => {
+        if (user?.role !== "TEACHER" && user?.role !== "ASSISTANT_TEACHER") {
+            throw new ApiError("Only teacher can remove the moderator.");
+        }
+        {
+            const existing = await ProblemRepository.getModerator(id);
+            if (!existing) {
+                throw new ApiError("No moderator exist with given id.");
+            }
+            if (existing.problem.createdBy !== user.sub) {
+                throw new ApiError("Unauthorized access, you are not allowed to remove the moderator.");
+            }
+        }
+        const data = await ProblemRepository.deleteModerator(id);
+        if (!data) {
+            throw new ApiError("Failed to remove the moderator.");
+        }
+
+        return data;
+    }
     private static authenticateModerator = async (teacherId: string, problemId: string) => {
         const mods = await ProblemRepository.getModerators(problemId);
 

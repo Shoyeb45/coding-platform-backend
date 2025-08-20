@@ -8,7 +8,6 @@ import { ApiResponse } from "../../utils/ApiResponse";
 export class ContestController {
 
     static getContests = async (req: Request, res: Response) => {
-        // TODO: Add actual id
         const contests = await ContestService.getContests(req.user);
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully fetched all the contests.", { contests })

@@ -52,10 +52,18 @@ export class ProblemController {
         next();
     }
 
+
+    static deleteModeratorFromProblem = async (req: Request, res: Response) => {
+        const id = req.params.id;
+        const deletedModerator = await ProblemService.deleteModeratorFromProblem(req.user, id);
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully deleted the problem.", { deletedModerator })
+        );
+    }
+
     static getAllProblemsOfCreator = async (req: Request, res: Response, next: NextFunction) => {
 
-
-        const creatorId = req.query.creatorId as string;
+        const creatorId = req.user?.sub;
         await ProblemService.getProblemsOfCreator(creatorId, res);
 
         res.status(res.locals.statusCode).json({
@@ -81,6 +89,9 @@ export class ProblemController {
         await ProblemService.addModeratorsToProblem(req.user?.sub, req.body, res);
     }
 
+    static ProblemController = async (req: Request, res: Response) => {
+        const id = req.params.id;
+    }
     static getModeratorsOfProblem = async (req: Request, res: Response, next: NextFunction) => {
         await ProblemService.getModeratorsOfProblem(req.params.problemId, res);
     }

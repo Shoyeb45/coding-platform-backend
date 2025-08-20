@@ -1,8 +1,9 @@
 import { prisma } from "./utils/prisma";
 
-prisma.programmingLanguage.create({
-    data: {
-        name: "C",
-        judge0Code: 103
+prisma.student.findMany({
+    select: {
+        name: true, batch: {
+            select: {id: true, name: true}
+        }
     }
-}).then((d) => {console.log("done")})
+}).then((d) => {console.log(d)})

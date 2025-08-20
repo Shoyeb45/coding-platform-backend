@@ -87,7 +87,7 @@ export class TestcaseService {
             throw new ApiError("Unauthorized access, you are not allowed to generate presigned url for given problem.", HTTP_STATUS.UNAUTHORIZED);
         }
 
-        const data = { presignedUrls: [{}] }
+        const data: { presignedUrls: {inputUploadUrl: string, outputUploadUrl: string}[] }  = { presignedUrls: [] }
 
         for (const testcase of testcasesData.testcases) {
             const inputKey = `testcases/${problemId}/input/${testcase.inputFilename}`;

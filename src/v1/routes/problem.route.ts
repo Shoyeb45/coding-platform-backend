@@ -10,6 +10,12 @@ const router = Router();
 // Apply authentication middleware to all routes
 router.use(authenticateUser);
 
+
+/**
+ * API Prefix: /api/v1/problems
+ */
+
+
 /**
  * GET /creator
  * 
@@ -73,6 +79,11 @@ router.route("/moderator/:problemId")
     .get(asyncHandler(ProblemController.getModeratorsOfProblem));
 
 
+/**
+ * DELETE /moderator/:id
+ * 
+ * @description Delete moderator from a specific problem, id
+ */
 router.route("/moderator/:id")
     .delete(asyncHandler(ProblemController.deleteModeratorFromProblem));
 

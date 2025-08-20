@@ -5,7 +5,8 @@ export const ZSubmission = z.object({
     contestId: z.string().optional(),
     languageId: z.string(),
     code: z.string(),
-    submissionTime: z.iso.datetime()
+    submissionTime: z.iso.datetime(),
+    languageCode: z.string()
 });
 
 export interface TestcaseData {
@@ -20,7 +21,10 @@ export interface SubmissionQueueType {
     studentId: string,
     problemId: string,
     contestId?: string,
+    languageId: string,
+    languageCode: string,
     code: string,
+    submissionId: string,
     testcases: TestcaseData[],
 }
 

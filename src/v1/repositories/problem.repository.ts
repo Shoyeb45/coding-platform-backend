@@ -24,12 +24,24 @@ export class ProblemRepository {
         return createdProblem;
     }
 
+    static getModerator = async (id: string) => {
+        return await prisma.problemModerator.findFirst({ where: { id }, select: { id: true, problem: {
+            select: {
+                createdBy: true
+            }
+        }}});
+    }
+
     static deleteDriverCodes = async (id: string) => {
         return await prisma.problemLanguage.delete({ where: { id }, select: {
             id: true, prelude: true, boilerplate: true, driverCode: true
         }});
     }
 
+    static deleteModerator = async (id: string) => {
+        return await prisma.problemModerator.delete({where: {id}});
+    }
+ 
     static getProblemById = async (id: string) => {
         const rawData = await prisma.problem.findFirst({
             where: { id, isActive: true }, select: {

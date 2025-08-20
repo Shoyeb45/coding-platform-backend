@@ -9,6 +9,13 @@ const router = Router();
 
 router.use(authenticateUser);
 
+
+/**
+ * API Prefix: /api/v1/contests
+ */
+
+
+
 /**
  * POST /
  * @description Create a contest

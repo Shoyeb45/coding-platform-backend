@@ -3,7 +3,7 @@ import { codeRunnerQueue } from "../../queues/codeExecution.queue";
 import { ApiError } from "../../utils/ApiError";
 import { RedisClient } from "../../utils/redisClient";
 import { ProblemRepository } from "../repositories/problem.repository";
-import { QueueDataType } from "../types/queue.type";
+import { QueueDataType, RedisSubmission } from "../types/queue.type";
 import { TCustomRun } from "../types/run.type";
 import { v4 as uuidv4 } from "uuid";
 
@@ -38,7 +38,7 @@ export class RunService {
         if (!result) {
             throw new ApiError("No submission found for given run id", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-        const data = JSON.parse(result);
+        const data: RedisSubmission = JSON.parse(result);
         if (data.status == "Failed") {
             throw new ApiError("Failed to execute the code", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
