@@ -201,7 +201,8 @@ router.route("/driver-code/:id")
  * 
  * @description Remove driver code
  * @access Private
- * @param {string} id - The driver code ID (NOT problem ID)
+ * @param {string} problemId - The driver code ID 
+ * @query id -> testcase id
  * @returns {Object} data: {
  *   deletedDriverCodes: {
  *     prelude: string;
@@ -211,7 +212,7 @@ router.route("/driver-code/:id")
  *   }
  * }
  */
-router.route("/driver-code/:id")
+router.route("/driver-code/:problemId")
     .delete(asyncHandler(ProblemController.deleteDriverCode));
 
 /**
