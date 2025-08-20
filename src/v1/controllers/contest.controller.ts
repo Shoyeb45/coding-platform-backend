@@ -20,12 +20,20 @@ export class ContestController {
         res.status(HTTP_STATUS.CREATED).json(
             new ApiResponse("Successfully added moderator the contest.", data)
         )
+    }
+
+    static deleteContest = async (req: Request, res: Response) => {
+        const contestId = req.params.contestId;
+        const data = await ContestService.deleteContest(req.user, contestId);
+        res.status(HTTP_STATUS.CREATED).json(
+            new ApiResponse("Successfully deleted contest.", {deletedContest: data})
+        )
     } 
 
     
     static deleteProblemFromContest = async (req: Request, res: Response) => {
-        const contestId = req.params.contestId;
-        await ContestService.deleteProblemFromContest(req.user, contestId, req.body.problemId);
+        const id = req.params.id;
+        await ContestService.deleteProblemFromContest(req.user, id);
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully deleted problem from the contest.", {})
         );

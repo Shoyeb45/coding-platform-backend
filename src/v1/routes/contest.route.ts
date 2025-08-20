@@ -25,10 +25,9 @@ router.use(authenticateUser);
  * @returns 
  * data: {
  *      contestDetail: {
+ *          id: string
             title: string;
             description: string;
-            startTime: Date;
-            endTime: Date;
             creator: {
                 id: string;
                 name: string;
@@ -48,15 +47,6 @@ router.route("/")
  * @returns 
  * data: {
  *   contests: {
-        batchContests: {
-            id: string;
-            name: string;
-        }[];
-        contestModerators: {
-            id: string;
-            name: string;
-            email: string;
-        }[];
         tags: {
             id: string;
             name: string;
@@ -127,18 +117,6 @@ router.route("/:contestId")
  * GET /:contestId
  * @description get the contest detail
  * @param contestId -> Id of the contest
- * @body
- {
-    isOpen: boolean;
-    title?: string | undefined;
-    description?: string | undefined;
-    startTime?: string | undefined;
-    batches?: string[] | undefined;
-    moderators?: string[] | undefined;
-    topics?: string[] | undefined;
-    endTime?: string | undefined;
-    languages?: string[] | undefined;
- }
  * @returns
  * data: {
  *  contestDatails: {
@@ -170,6 +148,21 @@ router.route("/:contestId")
 router.route("/:contestId")
     .get(asyncHandler(ContestController.getContest));
 
+/**
+ * DELETE /:contestId
+ * @description Delete existing contest
+ * @return
+ * data: {
+      deletedContest: {
+        id: string;
+        title: string;
+        description: string;
+      }
+    }
+ */
+router.route("/:contestId")
+    .delete(asyncHandler(ContestController.deleteContest));
+
 
 /**
  * GET /problem/:contestId
@@ -178,10 +171,12 @@ router.route("/:contestId")
  * @returns
  * data: {
  *      problems: {
-            id: string;
-            title: string;
-            difficulty: $Enums.Difficulty;
-            points: number;
+ *          id: string;  // which u will use to delete the problem from the contest
+            problem: {
+                id: string;
+                title: string;
+                difficulty: $Enums.Difficulty;
+            }
         }[]
  * }
  */
@@ -209,18 +204,14 @@ router.route("/problem/:contestId")
     .post(validate(ZContestProblem), asyncHandler(ContestController.addProblemToContest));
 
 /**
- * DELETE /problem/:contestId
+ * DELETE /problem/:id
  * @description Delete the problem from the contest
- * @param contestId id of the contest
- * @body
- * {
- *    problemId: string
- * }
+ * @param id it is the contestProblem id
  * @returns 
  * data: {}
  */
-router.route("/problem/:contestId")
-    .delete(validate(ZContestProblem.pick({ problemId: true })), asyncHandler(ContestController.deleteProblemFromContest));
+router.route("/problem/:id")
+    .delete(asyncHandler(ContestController.deleteProblemFromContest));
 
 
 /**
@@ -269,7 +260,7 @@ router.route("/moderators/:contestId")
  * @returns
  *  data: { }
  */
-router.route("/moderators/:contestId")
+router.route("/moderators/:moderatorId")
     .delete(asyncHandler(ContestController.deleteModerator));
 
 export default router;

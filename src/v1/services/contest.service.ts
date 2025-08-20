@@ -65,7 +65,7 @@ export class ContestService {
         this.authenticateTeacher(user);
         if (!moderatorId) {
             throw new ApiError("No moderator id not found.", HTTP_STATUS.BAD_REQUEST);
-        }     
+        }
         const deletedMod = await ContestRepository.deleteModerator(moderatorId);
         if (!deletedMod) {
             throw new ApiError("Failed to delete moderator from contest.", HTTP_STATUS.INTERNAL_SERVER_ERROR);
@@ -73,17 +73,14 @@ export class ContestService {
         return deletedMod;
     }
 
-    static deleteProblemFromContest = async (user: Express.Request["user"], contestId: string, problemId: string) => {
+    static deleteProblemFromContest = async (user: Express.Request["user"], id: string) => {
         this.authenticateTeacher(user);
-        if (!contestId) {
-            throw new ApiError("No contest id found", HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        if (!id) {
+            throw new ApiError("No problem contest id found", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
 
-        if (!(await this.checkContest(user?.id, contestId))) {
-            throw new ApiError("Unauthorized access, you don't have access to delete the problem from contest", HTTP_STATUS.UNAUTHORIZED);
-        }
+        const deletedProblem = await ContestRepository.deleteProblem(id);
 
-        const deletedProblem = await ContestRepository.deleteProblem({ contestId, problemId });
         if (!deletedProblem) {
             throw new ApiError("Failed to delete problem from contest.", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
@@ -94,7 +91,7 @@ export class ContestService {
         if (!contestId) {
             throw new ApiError("Contest id not found.", HTTP_STATUS.BAD_REQUEST);
         }
-    
+
         if (!(await this.checkContest(user?.id, contestId))) {
             throw new ApiError("Unauthorized access, you don't have access to add the moderators to the contest", HTTP_STATUS.UNAUTHORIZED);
         }
@@ -108,6 +105,22 @@ export class ContestService {
         return moderators.map((mod) => ({ moderatorId: mod.id, ...mod.moderator }));
     }
 
+    static deleteContest = async (user: Express.Request["user"], contestId: string) => {
+        this.authenticateTeacher(user);
+        if (!contestId) {
+            throw new ApiError("Contest id not found.", HTTP_STATUS.BAD_REQUEST);
+        }
+
+        if (!(await this.checkContest(user?.id, contestId))) {
+            throw new ApiError("Unauthorized access, you don't have access to delete the contest", HTTP_STATUS.UNAUTHORIZED);
+        }
+        const deletedContest = await ContestRepository.deleteContest(contestId);
+
+        if (!deletedContest) {
+            throw new ApiError("Failed to delete the contest.")
+        }
+        return deletedContest;
+    }
     static getAllModerators = async (user: Express.Request["user"], contestId: string) => {
         this.authenticateTeacher(user);
 
@@ -128,7 +141,7 @@ export class ContestService {
         if (!contestId) {
             throw new ApiError("No contest id found.", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-        
+
         if (!(await this.checkContest(user?.id, contestId))) {
             throw new ApiError("Unauthorized access, you don't have access to update the contest", HTTP_STATUS.UNAUTHORIZED);
         }
@@ -227,7 +240,8 @@ export class ContestService {
             new ApiError("Failed to add problem to the contest.", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
 
-        return { points: addedProblem.points, problemId: addedProblem.problem.id, title: addedProblem.problem.title }
+        const problems = await ContestRepository.getAllProblems(contestId);
+        return problems;
     }
 
     static getAllProblems = async (contestId: string) => {
@@ -236,12 +250,7 @@ export class ContestService {
         }
         const problems = await ContestRepository.getAllProblems(contestId);
 
-        return problems.map(problem => ({
-            id: problem.problem.id,
-            title: problem.problem.title,
-            difficulty: problem.problem.difficulty,
-            points: problem.points
-        }));
+        return problems;
     }
 
     static getContests = async (user: Express.Request["user"]) => {
@@ -255,7 +264,7 @@ export class ContestService {
             throw new ApiError("Failed to find the contests.");
         }
 
-        return contests.map(contest => (this.formatContestData(contest)))
+        return contests.map(contest => ({...contest, tags: contest.tags.map(tag => ({...tag.tag})), allowedLanguages: contest.allowedLanguages.map((lang) => ({ ...lang.language}))}))
     }
 }
 

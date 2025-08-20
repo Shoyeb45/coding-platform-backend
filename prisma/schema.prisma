@@ -328,7 +328,6 @@ model ContestProblem {
   id        String   @id @default(cuid())
   contestId String   @map("contest_id")
   problemId String   @map("problem_id")
-  points    Int      @default(100)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   contest   Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)

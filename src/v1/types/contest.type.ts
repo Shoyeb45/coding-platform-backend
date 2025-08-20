@@ -17,7 +17,7 @@ export const ZContest = z.object({
 });
 
 export const ZContestProblem = z.object({
-    problemId: z.string()
+    problemIds: z.array(z.string())
 });
 
 export const ZContestMod = z.object({

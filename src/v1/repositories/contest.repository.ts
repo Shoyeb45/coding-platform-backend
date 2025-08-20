@@ -12,7 +12,7 @@ export class ContestRepository {
         const createdContest = await prisma.contest.create({
             data: { ...data, createdBy },
             select: {
-                title: true, description: true, startTime: true, endTime: true, creator: {
+                id: true, title: true, creator: {
                     select: {
                         id: true, name: true, email: true, designation: true
                     }
@@ -21,6 +21,13 @@ export class ContestRepository {
         });
 
         return createdContest;
+    }
+
+    static deleteContest = async (contestId: string) => {
+        return prisma.contest.delete({
+            where: { id: contestId },
+            select: { id: true, title: true, description: true }
+        });
     }
 
     static getByTitle = async (title: string) => {
@@ -117,27 +124,20 @@ export class ContestRepository {
     }
 
     static addProblemToContest = async (contestId: string, data: TContestProblem) => {
-        return await prisma.contestProblem.create({
-            data: {
-                contestId: contestId,
-                ...data
-            }, select: {
-                points: true,
-                problem: {
-                    select: { id: true, title: true }
-                }
-            }
+        const problemData = data.problemIds.map((id) => ({ problemId: id, contestId}));
+        return await prisma.contestProblem.createMany({
+            data: problemData
         });
     }
 
-    static deleteProblem = async (where: { problemId: string, contestId: string }) => {
-        return await prisma.contestProblem.deleteMany({ where });
+    static deleteProblem = async (id: string) => {
+        return await prisma.contestProblem.delete({ where: { id }});
     }
     static getAllProblems = async (contestId: string) => {
         const rawData = await prisma.contestProblem.findMany({
             where: { contestId },
             select: {
-                points: true,
+                id: true,
                 problem: {
                     select: { id: true, title: true, difficulty: true }
                 }
@@ -150,21 +150,7 @@ export class ContestRepository {
         const rawData = await prisma.contest.findMany({
             where: { createdBy },
             select: {
-                id: true, title: true, description: true, startTime: true, endTime: true, batchContests: {
-                    select: {
-                        batch: {
-                            select: {
-                                id: true, name: true
-                            }
-                        }
-                    }
-                }, contestModerators: {
-                    select: {
-                        moderator: {
-                            select: { id: true, name: true, email: true }
-                        }
-                    }
-                }, tags: {
+                id: true, title: true, description: true, startTime: true, endTime: true, tags: {
                     select: {
                         tag: {
                             select: { id: true, name: true }
