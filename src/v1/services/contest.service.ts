@@ -61,10 +61,37 @@ export class ContestService {
         return teacher || moderator;
     }
 
+    static publishContest = async (user: Express.Request["user"], contestId: string) => {
+        this.authenticateTeacher(user);
+        if (!contestId) {
+            throw new ApiError("No contest id  found.", HTTP_STATUS.BAD_REQUEST);
+        }
+
+        {
+            const existingContest = await ContestRepository.getContestById(contestId);
+            if (!user?.id) {
+                throw new ApiError("Teacher id not found");
+            }
+            if (!existingContest) {
+                throw new ApiError("No contest found with given id.", HTTP_STATUS.BAD_REQUEST);
+            }
+            const now = new Date(); 
+            if (existingContest.endTime > now) {
+                throw new ApiError("You can't make contest publish which is not yet done.");
+            }
+            let teacher = existingContest.creator.id === user.id;
+            if (!teacher) {
+                throw new ApiError("You are not allowed to make this contest publish.");
+            }
+        }
+        
+        const data = await ContestRepository.publishContest(contestId);
+        return data;
+    }
     static deleteModerator = async (user: Express.Request["user"], moderatorId: string) => {
         this.authenticateTeacher(user);
         if (!moderatorId) {
-            throw new ApiError("No moderator id not found.", HTTP_STATUS.BAD_REQUEST);
+            throw new ApiError("No moderator id found.", HTTP_STATUS.BAD_REQUEST);
         }
         const deletedMod = await ContestRepository.deleteModerator(moderatorId);
         if (!deletedMod) {
@@ -264,7 +291,7 @@ export class ContestService {
             throw new ApiError("Failed to find the contests.");
         }
 
-        return contests.map(contest => ({...contest, tags: contest.tags.map(tag => ({...tag.tag})), allowedLanguages: contest.allowedLanguages.map((lang) => ({ ...lang.language}))}))
+        return contests.map(contest => ({ ...contest, tags: contest.tags.map(tag => ({ ...tag.tag })), allowedLanguages: contest.allowedLanguages.map((lang) => ({ ...lang.language })) }))
     }
 
     static getPastContests = async (user: Express.Request["user"]) => {
@@ -277,9 +304,15 @@ export class ContestService {
         if (!contests) {
             throw new ApiError("Failed to fetch past contests.");
         }
-        return contests;
+        const newData = contests.map((contest) => ({
+            ...cleanObject(contest),
+            allowedLanguages: contest?.allowedLanguages.map(lang => ({...lang.language})),
+            tags: contest?.tags.map((tag) => ({ ...tag.tag })),
+
+        }));
+        return  newData;
     }
-} 
+}
 
 
 

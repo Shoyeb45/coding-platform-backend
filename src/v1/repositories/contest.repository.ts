@@ -4,6 +4,7 @@ import { logger } from "../../utils/logger";
 import { prisma } from "../../utils/prisma";
 import { TContest, TContestCreate, TContestMod, TContestProblem } from "../types/contest.type";
 import { TProblemCreate, TProblemFilter, TProblemModerator, TProblemUpdate } from "../types/problem.type";
+import { cleanObject } from "../../utils/cleanObject";
 
 export class ContestRepository {
 
@@ -32,6 +33,31 @@ export class ContestRepository {
 
     static getByTitle = async (title: string) => {
         return await prisma.contest.findFirst({ where: { title } });
+    }
+
+    static publishContest = async (contestId: string) => {
+        return await prisma.contest.update({
+            where: { id: contestId },
+            data: {
+                isPublished: true
+            }, select: {
+                id: true, title: true, description: true
+            }
+        });
+    }
+
+    static countParticipants = async (contestId: string) => {
+        return await prisma.student.count({
+            where: {
+                batch: {
+                    contests: {
+                        some: {
+                            contestId: contestId
+                        }
+                    }
+                }
+            }
+        });
     }
 
     static getContestById = async (id: string) => {
@@ -182,30 +208,70 @@ export class ContestRepository {
             where: {
                 createdBy,
                 endTime: {
-                    lt: new Date()
-                }
+                    lt: new Date(),
+                },
             },
             select: {
-                id: true, title: true, description: true, startTime: true, endTime: true, tags: {
+                id: true,
+                title: true,
+                description: true,
+                startTime: true,
+                endTime: true,
+                isPublished: true,
+                tags: {
                     select: {
                         tag: {
-                            select: { id: true, name: true }
-                        }
-                    }
-                }, allowedLanguages: {
+                            select: { id: true, name: true },
+                        },
+                    },
+                },
+                allowedLanguages: {
                     select: {
                         language: {
-                            select: { id: true, name: true }
-                        }
-                    }
-                }, subject: {
-                    select: { id: true, name: true }
-                }
-            }
+                            select: { id: true, name: true },
+                        },
+                    },
+                },
+                subject: {
+                    select: { id: true, name: true },
+                },
+                // 👇 Count participants
+                _count: {
+                    select: {
+                        batchContests: true, // number of batches (not students yet)
+                    },
+                },
+                batchContests: {
+                    select: {
+                        batch: {
+                            select: {
+                                students: {
+                                    select: { id: true },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
         });
-        return rawData;
 
-    }
+        // Flatten into participant counts
+        const contestsWithCounts = rawData.map(contest => {
+            const studentIds = contest.batchContests.flatMap(bc =>
+                bc.batch.students.map(s => s.id)
+            );
+            const uniqueCount = new Set(studentIds).size;
+            return {
+                ...contest,
+                batchContests: undefined,
+                _count: undefined,
+                participants: uniqueCount,
+            };
+        });
+
+        return contestsWithCounts;
+    };
+
     static getTimings = async (contestId: string) => {
         return await prisma.contest.findFirst({
             where: { id: contestId },

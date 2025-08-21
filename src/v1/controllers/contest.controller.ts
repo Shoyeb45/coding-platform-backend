@@ -22,6 +22,15 @@ export class ContestController {
         )
     }
 
+
+    static publishContest = async (req: Request, res: Response) => {
+        const contestId = req.params.contestId;
+        const contestDetails = await ContestService.publishContest(req.user, contestId);
+
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully published the contest.", { contestDetails })
+        )
+    }
     static deleteContest = async (req: Request, res: Response) => {
         const contestId = req.params.contestId;
         const data = await ContestService.deleteContest(req.user, contestId);

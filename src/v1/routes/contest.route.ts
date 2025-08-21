@@ -60,12 +60,31 @@ router.route("/")
         startTime: Date;
         endTime: Date;
         id: string;
+        isPublished: boolean,
+        participants: number
     }[]
  * }
  */
 router.route("/past")
     .get(asyncHandler(ContestController.getPastContests));
-    
+
+
+/**
+ * PUT /publish/:contestId
+ * @description Publish the contest to the students, they can see the leaderboard and all
+ * @param contestId -> Id of the contest
+ * @returns
+ * "data": {
+        "contestDetails": {
+            "id": string,
+            "title": string,
+            "description": string
+        }
+    },
+ */
+router.route("/publish/:contestId")
+    .put(asyncHandler(ContestController.publishContest));
+
 /**
  * GET /
  * @description Get all contests upcoming and live contests of the teacher
