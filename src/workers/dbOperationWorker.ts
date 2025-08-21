@@ -94,7 +94,7 @@ function determineSubmissionStatus(passedTestCases: number, totalTestCases: numb
 const dbWorker = new Worker<SubmissionRunnerResult>(
     "database-operations", 
     async (job: Job<SubmissionRunnerResult>) => {
-        const { runnerResult, metadata } = job.data;
+        const { problemPoint, runnerResult, metadata } = job.data;
         const runId = runnerResult.runId;
 
         try {
@@ -136,7 +136,7 @@ const dbWorker = new Worker<SubmissionRunnerResult>(
             const completionFactor = runnerResult.passedTestCases / runnerResult.totalTestCases;
             const baseScore =  completionFactor * maxProblemdifficulty;
             const weightedTestCaseScore = calculateWeightedScore(runnerResult.results) * maxTestcase;
-            const totalScore = roundToTwoDecimals(baseScore + weightedTestCaseScore);
+            const totalScore = roundToTwoDecimals(problemPoint * (baseScore + weightedTestCaseScore));
 
             // Prepare submission data
             const submissionData = {

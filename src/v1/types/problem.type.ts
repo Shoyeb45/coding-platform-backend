@@ -13,25 +13,16 @@ export const ZProblem = z.object({
   isPublic: z.boolean().optional(),
   problemWeight: z.number()
     .int()
-    .min(0, "Problem weight must be >= 0.")
+    .min(1, "Problem weight must be > 0.")
     .max(100, "Problem weight must be <= 100.")
     .optional(),
   testcaseWeight: z.number()
     .int()
-    .min(0, "Testcase weight must be >= 0.")
+    .min(1, "Testcase weight must be > 0.")
     .max(100, "Testcase weight must be <= 100.")
     .optional(),
   tags: z.array(z.string()).optional()
-}).superRefine((data, ctx) => {
-  if (data.problemWeight && data.testcaseWeight && data.problemWeight + data.testcaseWeight !== 100) {
-    ctx.addIssue({
-      code: "custom",
-      message: "The sum of testcase weight and problem weight can be upto 100.",
-      path: ["testcaseWeight"]
-    });
-  }
-}
-);
+});
 
 export const ZProblemModerator = z.object({
   problemId: z.string(),

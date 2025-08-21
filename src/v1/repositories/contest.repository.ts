@@ -103,6 +103,15 @@ export class ContestRepository {
         return rawData;
     }
 
+    static getProblemContest = async (problemId: string, contestId: string) => {
+        return await prisma.contestProblem.findFirst({
+            where: { problemId, contestId },
+            select: {
+                point: true
+            }
+        });
+    }
+
     static deleteModerator = async (id: string) => {
         const deletedMod = await prisma.contestModerator.delete({
             where: { id }
@@ -156,10 +165,8 @@ export class ContestRepository {
     static addProblemToContest = async (contestId: string, data: TContestProblem) => {
         let problemData: {
             point: number, problemId: string, contestId: string
-        }[] = [];
-        for (let i = 0; i < data.points.length; i++) {
-            problemData.push({ point: data.points[i], contestId, problemId: data.problemIds[i] });
-        }
+        }[] = data.problems.map((problem) => ({ contestId, point: problem.point, problemId: problem.problemId}));
+        
         return await prisma.contestProblem.createMany({
             data: problemData
         });

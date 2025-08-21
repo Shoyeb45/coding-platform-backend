@@ -101,7 +101,7 @@ export class ContestController {
         const contestId = req.params.contestId;
         const data = await ContestService.addProblemToContest(req.user, contestId, req.body);
         res.status(HTTP_STATUS.OK).json(
-            new ApiResponse("Successfully added problem", { problemDetail: data })
+            new ApiResponse("Successfully added problem", { problemDetails: data })
         );
     }
 
@@ -110,7 +110,7 @@ export class ContestController {
         
         const problems = await ContestService.getAllProblems(req.user, contestId);
         res.status(HTTP_STATUS.OK).json(
-            new ApiResponse("Successfully fetched all the problems", problems )
+            new ApiResponse("Successfully fetched all the problems", problems)
         );
     }
 }

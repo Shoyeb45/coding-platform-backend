@@ -25,6 +25,7 @@ export interface SubmissionQueueType {
     languageCode: string,
     code: string,
     submissionId: string,
+    problemPoint: number,
     submittedAt: string,
     testcases: TestcaseData[],
 }

@@ -90,6 +90,7 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
                 results: allResults,
             };
             const finalResult: SubmissionRunnerResult = {
+                problemPoint: job.data.problemPoint,
                 runnerResult,
                 metadata: {
                     problemId: job.data.problemId,

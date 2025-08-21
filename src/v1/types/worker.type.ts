@@ -17,6 +17,7 @@ export interface CodeRunnerResult {
 
 
 export interface SubmissionRunnerResult {
+  problemPoint: number,
   runnerResult: CodeRunnerResult,
   metadata: {
     problemId: string,

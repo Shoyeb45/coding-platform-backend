@@ -90,7 +90,7 @@ export class SubmissionService {
         submissionData.code = `${driverCodes.prelude}\n\n${submissionData.code}\n\n${driverCodes.driverCode}`;
         const submissionId = uuidv4();
   
-
+        const problemContest = await ContestRepository.getProblemContest(submissionData.problemId, submissionData.contestId);
         const data: SubmissionQueueType = {
             studentId: user?.id,
             submissionId,
@@ -98,6 +98,7 @@ export class SubmissionService {
             languageId: submissionData.languageId,
             problemId: submissionData.problemId,
             contestId: submissionData.contestId,
+            problemPoint: problemContest?.point ?? 1,
             code: submissionData.code,
             testcases: JSON.parse(testcases),
             submittedAt: submissionData.submissionTime

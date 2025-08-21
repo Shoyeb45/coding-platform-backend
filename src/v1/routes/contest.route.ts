@@ -232,17 +232,30 @@ router.route("/problem/:contestId")
  * @description add problem to the contest
  * @param contestId: id of the contest 
  * @body
- * {
- *    problemId: string
- * }
+{
+    "problems": [
+        {
+            "problemId": string,
+            "point": number
+        }
+    ]
+}
  * @returns
- * data: {
-      problemDetail: {
-        points: number;
-        problemId: string;
-        title: string;
+"data": {
+        "problemDetails": [
+            {
+                "point": 1,
+                "id": "cmeljiaw50000n554cxjknu7b",
+                "problem": {
+                    "id": "cmek5a0oq0001n59gdt5o4lhy",
+                    "title": "Two Sum",
+                    "difficulty": "Easy",
+                    "testcaseWeight": 70,
+                    "problemWeight": 30
+                }
+            }
+        ]
     }
- * }
  */
 router.route("/problem/:contestId")
     .post(validate(ZContestProblem), asyncHandler(ContestController.addProblemToContest));

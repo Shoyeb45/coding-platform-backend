@@ -18,8 +18,10 @@ export const ZContest = z.object({
 });
 
 export const ZContestProblem = z.object({
-    problemIds: z.array(z.string()),
-    points: z.array(z.int32().min(1, "Atleast 1 point should be there for problem.").max(10, "Atmost 10 point is there for problem."))
+    problems: z.array(z.object({
+        problemId: z.string(),
+        point: z.int32().min(1, "Atleast 1 point should be there for problem.").max(10, "Atmost 10 point is there for problem.")
+    }))
 });
 
 export const ZContestMod = z.object({
