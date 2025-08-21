@@ -286,7 +286,6 @@ export class ContestService {
         if (!problems) {
             throw new ApiError("Failed to fetch problems.");
         }
-        console.log(problems);
         return {
             ...this.formatContestData(contest),
             problems: problems.map((problem) => ({...problem}))

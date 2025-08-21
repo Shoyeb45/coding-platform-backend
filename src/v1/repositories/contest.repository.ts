@@ -154,7 +154,12 @@ export class ContestRepository {
     }
 
     static addProblemToContest = async (contestId: string, data: TContestProblem) => {
-        const problemData = data.problemIds.map((id) => ({ problemId: id, contestId }));
+        let problemData: {
+            point: number, problemId: string, contestId: string
+        }[] = [];
+        for (let i = 0; i < data.points.length; i++) {
+            problemData.push({ point: data.points[i], contestId, problemId: data.problemIds[i] });
+        }
         return await prisma.contestProblem.createMany({
             data: problemData
         });
@@ -167,6 +172,7 @@ export class ContestRepository {
         const rawData = await prisma.contestProblem.findMany({
             where: { contestId },
             select: {
+                point: true,
                 id: true,
                 problem: {
                     select: { id: true, title: true, difficulty: true, testcaseWeight: true, problemWeight: true}

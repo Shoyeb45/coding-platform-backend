@@ -130,11 +130,12 @@ const dbWorker = new Worker<SubmissionRunnerResult>(
             // Calculate total score
             logger.info("Calculating total score...");
             const status = determineSubmissionStatus(runnerResult.passedTestCases, runnerResult.totalTestCases);
-            const problemWeight = scores?.problemWeight ?? 30;
-            const testcaseWeight = scores?.testcaseWeight ?? 70;
+            const maxProblemdifficulty = scores?.problemWeight ?? 30;
+            const maxTestcase = scores?.testcaseWeight ?? 70;
             
-            const baseScore = status === "Accepted" ? problemWeight : 0;
-            const weightedTestCaseScore = calculateWeightedScore(runnerResult.results) * testcaseWeight;
+            const completionFactor = runnerResult.passedTestCases / runnerResult.totalTestCases;
+            const baseScore =  completionFactor * maxProblemdifficulty;
+            const weightedTestCaseScore = calculateWeightedScore(runnerResult.results) * maxTestcase;
             const totalScore = roundToTwoDecimals(baseScore + weightedTestCaseScore);
 
             // Prepare submission data
