@@ -5,7 +5,7 @@ import { ZProblemFilter } from "../types/problem.type";
 import { HTTP_STATUS } from "../../config/httpCodes";
 import { ApiResponse } from "../../utils/ApiResponse";
 import { ApiError } from "../../utils/ApiError";
-import { cleanObject } from "../../utils/cleanObject";
+import { cleanObject } from "../../utils/helper";
 
 export class ProblemController {
     static createProblem = async (req: Request, res: Response, next: NextFunction) => {

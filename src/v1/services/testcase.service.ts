@@ -7,7 +7,7 @@ import { ApiResponse } from "../../utils/ApiResponse";
 import { TestcaseRepository } from "../repositories/testcase.repository";
 import { SafeParseResult } from "zod/v4/core/util.cjs";
 import { logger } from "../../utils/logger";
-import { cleanObject } from "../../utils/cleanObject";
+import { cleanObject } from "../../utils/helper";
 import { ProblemRepository } from "../repositories/problem.repository";
 
 export class TestcaseService {

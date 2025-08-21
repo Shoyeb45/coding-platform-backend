@@ -4,7 +4,7 @@ import { logger } from "../../utils/logger"
 import { ContestRepository } from "../repositories/contest.repository";
 import { ApiError } from "../../utils/ApiError";
 import { HTTP_STATUS } from "../../config/httpCodes";
-import { cleanObject } from "../../utils/cleanObject";
+import { cleanObject } from "../../utils/helper";
 import { ProblemRepository } from "../repositories/problem.repository";
 
 
@@ -271,13 +271,26 @@ export class ContestService {
         return problems;
     }
 
-    static getAllProblems = async (contestId: string) => {
+    static getAllProblems = async (user: Express.Request["user"], contestId: string) => {
+        this.authenticateTeacher(user);
         if (!contestId) {
             throw new ApiError("No contest id found to fetch problem.", HTTP_STATUS.BAD_GATEWAY);
         }
-        const problems = await ContestRepository.getAllProblems(contestId);
+        const contest = await ContestRepository.getContestById(contestId);
 
-        return problems;
+        if (!contest) {
+            throw new ApiError("No contest exists.");
+        }
+
+        const problems = await ContestRepository.getAllProblems(contestId);
+        if (!problems) {
+            throw new ApiError("Failed to fetch problems.");
+        }
+        console.log(problems);
+        return {
+            ...this.formatContestData(contest),
+            problems: problems.map((problem) => ({...problem}))
+        };
     }
 
     static getContests = async (user: Express.Request["user"]) => {

@@ -1,11 +1,14 @@
 import { Job, Worker } from "bullmq";
 import { SubmissionQueueType } from "../v1/types/submission.type";
 import { redisConfig } from "../config/queue.config";
-import { Judge0ExecutionResult } from "../v1/types/judge0.type";
 import { batchSubmissionWithJudge0 } from "../services/judge0.service";
 import { logger } from "../utils/logger";
 import { RedisClient } from "../utils/redisClient";
 import { CodeRunnerResult, SubmissionRunnerResult } from "../v1/types/worker.type";
+import { dbQueue } from "../queues/codeExecution.queue";
+import { config } from "../config";
+
+
 
 const BATCH_SIZE = 5;
 const MAX_CONCURRENT_BATCHES = 3;
@@ -14,13 +17,14 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
     'submission-execution',
     async (job: Job<SubmissionQueueType>) => {
         try {
+
             await RedisClient.getInstance().setForRun(job.data.submissionId, JSON.stringify({ status: "Running" }));
 
             // Split inputs into batches
             const inputs = job.data.testcases.map((testcase) => { return testcase.input; });
             const totalTestCases = job.data.testcases.length;
             let passedCount = 0;
-            
+
             const batches = chunkArray(inputs, BATCH_SIZE);
             const allResults: CodeRunnerResult["results"] = [];
 
@@ -41,12 +45,12 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
                     results.forEach((result, resultIndex) => {
                         // Calculate the overall test case index
                         const testCaseIndex = (i + batchIndex) * BATCH_SIZE + resultIndex;
-                        
+
                         // Get expected output from the corresponding test case
                         const expectedOutput = job.data.testcases[testCaseIndex]?.output || '';
-                        
+
                         const passed = result.status === 'Accepted' && result.output.trim() === expectedOutput.trim();
-                        
+
                         if (passed) passedCount++;
 
                         allResults.push({
@@ -57,6 +61,7 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
                             compilerError: result?.compileError,
                             executionTime: result.time,
                             memory: result.memory,
+                            id: job.data.testcases[testCaseIndex].id,
                             passed,
                         });
                     });
@@ -73,7 +78,7 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
                         results: allResults
                     }
                 }));
-                
+
                 logger.info(`Processed ${allResults.length}/${totalTestCases} test cases`);
             }
 
@@ -84,7 +89,6 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
                 passedTestCases: passedCount,
                 results: allResults,
             };
-
             const finalResult: SubmissionRunnerResult = {
                 runnerResult,
                 metadata: {
@@ -108,13 +112,13 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
 
         } catch (error: any) {
             logger.error(`Batch processing failed: ${error.message}`);
-            
+
             // Update Redis with error status
             await RedisClient.getInstance().setForRun(job.data.submissionId, JSON.stringify({
                 status: "Failed",
                 error: error.message
             }));
-            
+
             throw error;
         }
     },
@@ -132,3 +136,45 @@ function chunkArray<T>(array: T[], size: number): T[][] {
     }
     return chunks;
 }
+
+
+
+
+// submission worker event handlers
+submissionRunnerWorker.on('completed', async (job, result) => {
+    // update the redis with status completed
+    logger.info(`Submission with id: ${job.data.submissionId} successfully executed and evaluted.`);
+
+    logger.info(`Adding the result to the database queue, for processing in database`);
+
+    await dbQueue.add("save-submission-result", result, {
+        attempts: 5, backoff: {
+            type: "exponential",
+            delay: 2000
+        },
+        removeOnComplete: 10,
+        removeOnFail: 50
+    });
+
+    // update in redis
+    await RedisClient.getInstance().setForRun(job.data.submissionId, JSON.stringify({
+        status: "Done",
+        result: result.runnerResult
+    }));
+    logger.info(`Redis client updated successfully for submission id : ${job.data.submissionId}`)
+});
+
+submissionRunnerWorker.on('failed', async (job, err) => {
+    logger.error(`Submission execution failed for ${job?.data?.submissionId}: ${err}`);
+    if (job?.data?.submissionId) {
+        try {
+            await RedisClient.getInstance().setForRun(job.data.submissionId, JSON.stringify({
+                status: "Failed",
+                error: err.message,
+                failedAt: new Date()
+            }));
+        } catch (redisError) {
+            logger.error(`Failed to update Redis with failure status: ${redisError}`);
+        }
+    }
+});

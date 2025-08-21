@@ -5,6 +5,7 @@ import { redisConfig } from '../config/queue.config';
 import { QueueDataType } from '../v1/types/queue.type';
 import { CodeRunnerResult } from '../v1/types/worker.type';
 import { RedisClient } from '../utils/redisClient';
+import { config } from '../config';
 
 // custom code runner
 export const codeRunnerWorker = new Worker<QueueDataType, CodeRunnerResult>(
@@ -15,6 +16,7 @@ export const codeRunnerWorker = new Worker<QueueDataType, CodeRunnerResult>(
     logger.info(`Processing custom code exuecution, runId: ${runId}`);
 
     await RedisClient.getInstance().setForRun(runId, JSON.stringify({ status: "Running" }));
+    console.log("redisHost in this worker:", config.redisHost);
 
     const results: CodeRunnerResult['results'] = [];
     let passedCount = 0;
@@ -48,11 +50,11 @@ export const codeRunnerWorker = new Worker<QueueDataType, CodeRunnerResult>(
           memory: result.memory,
           passed,
         });
-        await RedisClient.getInstance().setForRun(runId, JSON.stringify({ 
-          status: "Running", 
+        await RedisClient.getInstance().setForRun(runId, JSON.stringify({
+          status: "Running",
           result: {
             runId,
-            totalTestCases: n, 
+            totalTestCases: n,
             passedTestCases: passed,
             results
           }
@@ -92,3 +94,22 @@ export const codeRunnerWorker = new Worker<QueueDataType, CodeRunnerResult>(
     concurrency: 5,
   }
 );
+
+
+// custom run worker event handlers
+codeRunnerWorker.on('completed', async (job, result) => {
+  logger.info(`Custom run with runId: ${result.runId}, processed successfully`);
+
+  await RedisClient.getInstance().setForRun(result.runId, JSON.stringify({ status: "Done", result }))
+  logger.info(`Redis client updated successfully for runId: ${result.runId}`)
+});
+
+codeRunnerWorker.on('failed', async (job, err) => {
+  if (!job) {
+    logger.error("Failed to execute the code");
+    return;
+  }
+
+  logger.error(`Job ${job?.id} failed: ${err.message}`);
+  await RedisClient.getInstance().setForRun(job.data.runId, JSON.stringify({ status: "Failed" }));
+});

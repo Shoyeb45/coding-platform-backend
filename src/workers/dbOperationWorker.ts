@@ -92,7 +92,7 @@ function determineSubmissionStatus(passedTestCases: number, totalTestCases: numb
 
 
 const dbWorker = new Worker<SubmissionRunnerResult>(
-    "db-operations", 
+    "database-operations", 
     async (job: Job<SubmissionRunnerResult>) => {
         const { runnerResult, metadata } = job.data;
         const runId = runnerResult.runId;
@@ -140,6 +140,7 @@ const dbWorker = new Worker<SubmissionRunnerResult>(
             // Prepare submission data
             const submissionData = {
                 ...metadata,
+                code: Buffer.from(metadata.code).toString("base64"),
                 score: totalScore,
                 status,
                 memoryUsed: avgMemoryUsed,
@@ -168,7 +169,7 @@ const dbWorker = new Worker<SubmissionRunnerResult>(
                     submissionId: submission.id,
                     testCaseId: result?.id ?? `testcase_${index}`, // Fallback ID if missing
                     status: result.status || "Unknown",
-                    executionTime: result?.executionTime ?? 0,
+                    executionTime: Number(result?.executionTime) ?? 0,
                     memoryUsed: result?.memory ?? 0
                 }));
 
@@ -307,7 +308,8 @@ dbWorker.on('failed', (job, err) => {
         error: err.message
     };
 
-    logger.error(`Database operation failed for job ${job?.id}: ${errorInfo}`);
+    console.error(err)
+    logger.error(`Database operation failed for job ${job?.id}: ${errorInfo.error}`);
     
     // If this is the final attempt, send detailed alert
     if (job && job.attemptsMade >= (job.opts?.attempts || 1)) {

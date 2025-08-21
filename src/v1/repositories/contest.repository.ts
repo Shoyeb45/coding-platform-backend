@@ -4,7 +4,7 @@ import { logger } from "../../utils/logger";
 import { prisma } from "../../utils/prisma";
 import { TContest, TContestCreate, TContestMod, TContestProblem } from "../types/contest.type";
 import { TProblemCreate, TProblemFilter, TProblemModerator, TProblemUpdate } from "../types/problem.type";
-import { cleanObject } from "../../utils/cleanObject";
+import { cleanObject } from "../../utils/helper";
 
 export class ContestRepository {
 
@@ -169,8 +169,8 @@ export class ContestRepository {
             select: {
                 id: true,
                 problem: {
-                    select: { id: true, title: true, difficulty: true }
-                }
+                    select: { id: true, title: true, difficulty: true, testcaseWeight: true, problemWeight: true}
+                }, 
             }
         });
         return rawData;

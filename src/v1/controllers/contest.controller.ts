@@ -108,9 +108,9 @@ export class ContestController {
     static getAllProblems = async (req: Request, res: Response) => {
         const contestId = req.params.contestId;
         
-        const problems = await ContestService.getAllProblems(contestId);
+        const problems = await ContestService.getAllProblems(req.user, contestId);
         res.status(HTTP_STATUS.OK).json(
-            new ApiResponse("Successfully fetched all the problems", { problems })
+            new ApiResponse("Successfully fetched all the problems", problems )
         );
     }
 }

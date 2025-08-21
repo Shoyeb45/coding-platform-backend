@@ -1,4 +1,7 @@
 import { ConnectionOptions } from 'bullmq';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 export const redisConfig: ConnectionOptions = {
   host: process.env.REDIS_HOST || 'localhost',

@@ -6,7 +6,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npx tsc -b",
     "dev": "nodemon",
-    "dev:worker": "node dist/workers/index.js",
+    "start:runnerWorker": "node dist/workers/codeRunnerWorker.js",
+    "start:submissionWorker": "node dist/workers/submissionRunnerWorker.js",
+    "start:dbWorker": "node dist/workers/dbOperationWorker.js",
     "start": "node dist/index.js",
     "lint": "npx eslint",
     "lint:fix": "npx eslint . --fix"

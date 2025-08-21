@@ -6,7 +6,7 @@ import { logger } from "../../utils/logger";
 import { ApiResponse } from "../../utils/ApiResponse";
 import { ZodSafeParseResult } from "zod";
 import { HTTP_STATUS } from "../../config/httpCodes";
-import { cleanObject } from "../../utils/cleanObject";
+import { cleanObject, convertToBase64, convertToNormalString } from "../../utils/helper";
 
 export class ProblemService {
     static createProblem = async (problemData: TProblemCreate, res: Response) => {
@@ -97,7 +97,7 @@ export class ProblemService {
         }
 
         const problems = await ProblemRepository.getAllProblems(parsedData.data);
-        const updated = problems.map(problem => ({ isOwner: problem?.creator?.id === teacherId, ...problem}));
+        const updated = problems.map(problem => ({ isOwner: problem?.creator?.id === teacherId, ...problem }));
         res.locals.data = { problems: updated };
         res.locals.success = true;
         res.locals.statusCode = 200;
@@ -194,9 +194,11 @@ export class ProblemService {
         if (!data) {
             throw new ApiError("Failed to delete driver codes");
         }
-
-        return data; 
-    }   
+        data.driverCode = convertToNormalString(data.driverCode);
+        data.prelude = convertToNormalString(data.prelude);
+        data.boilerplate = convertToNormalString(data.boilerplate);
+        return data;
+    }
     static addModeratorsToProblem = async (teacherId: string | undefined, data: TProblemModerator, res: Response) => {
         if (!teacherId) {
             throw new ApiError("Teacher id not found.", HTTP_STATUS.UNAUTHORIZED);
@@ -252,11 +254,19 @@ export class ProblemService {
             throw new ApiError("Could not found problem Id", HTTP_STATUS.BAD_REQUEST);
         }
         await this.checkProblem(problemId, teacherId);
-        const data = await ProblemRepository.addDriverCode(problemId, driverCodeData);
+        const data = await ProblemRepository.addDriverCode(problemId, {
+            ...driverCodeData,
+            prelude: convertToBase64(driverCodeData.prelude),
+            driverCode: convertToBase64(driverCodeData.driverCode),
+            boilerplate: convertToBase64(driverCodeData.boilerplate)
+        });
 
         if (!data) {
             throw new ApiError("Failed to create new problem");
         }
+        data.driverCode = convertToNormalString(data.driverCode);
+        data.prelude = convertToNormalString(data.prelude);
+        data.boilerplate = convertToNormalString(data.boilerplate);
         return data;
     }
 
@@ -267,7 +277,16 @@ export class ProblemService {
 
         let driverData = { problemId };
         // const data = await ProblemRepository.getDriverCodes(problemId, languageId);
-        let data;
+        let data: {
+            prelude: string;
+            boilerplate: string;
+            driverCode: string;
+            id: string;
+            language: {
+                name: string;
+                id: string;
+            };
+        }[];
         if (languageId) {
             data = await ProblemRepository.getDriverCodes({ languageId, problemId });
         } else {
@@ -277,8 +296,15 @@ export class ProblemService {
         if (!data) {
             throw new ApiError("Failed to find driver codes for the given problem");
         }
+        const newData = data.map((d) => ({
+            ...d,
+            prelude: convertToNormalString(d.prelude),
+            boilerplate: convertToNormalString(d.boilerplate),
+            driverCode: convertToNormalString(d.driverCode)
+        }));
 
-        return data;
+
+        return newData;
     }
 
     static updateDriverCode = async (teacherId: string | undefined, id: string, driverCodeData: TProblemDriverUpdate) => {
@@ -289,11 +315,24 @@ export class ProblemService {
             throw new ApiError("Could not found problem Id", HTTP_STATUS.BAD_REQUEST);
         }
         // await this.checkProblem(problemId, teacherId);
+        if (driverCodeData.boilerplate) {
+            driverCodeData.boilerplate = convertToBase64(driverCodeData.boilerplate);
+        }
+        if (driverCodeData.prelude) {
+            driverCodeData.prelude = convertToBase64(driverCodeData.prelude);
+        }
+        if (driverCodeData.driverCode) {
+            driverCodeData.driverCode = convertToBase64(driverCodeData.driverCode);
+        }
+
         const data = await ProblemRepository.updateDriverCode(id, driverCodeData);
 
         if (!data) {
             throw new ApiError("Failed to update driver codes for the given problem");
         }
+        data.driverCode = convertToNormalString(data.driverCode);
+        data.prelude = convertToNormalString(data.prelude);
+        data.boilerplate = convertToNormalString(data.boilerplate);
 
         return data;
     }
