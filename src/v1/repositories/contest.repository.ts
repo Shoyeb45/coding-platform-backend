@@ -165,11 +165,19 @@ export class ContestRepository {
     static addProblemToContest = async (contestId: string, data: TContestProblem) => {
         let problemData: {
             point: number, problemId: string, contestId: string
-        }[] = data.problems.map((problem) => ({ contestId, point: problem.point, problemId: problem.problemId}));
-        
+        }[] = data.problems.map((problem) => ({ contestId, point: problem.point, problemId: problem.problemId }));
+
         return await prisma.contestProblem.createMany({
             data: problemData
         });
+    }
+
+    static getCountOfParticipants = async (contestId: string) => {
+        const result = await prisma.$queryRaw<{ unique_participants: number }[]>
+            `SELECT COUNT(DISTINCT student_id) AS unique_participants 
+            FROM submission 
+            WHERE contest_id = ${contestId};`;
+        return Number(result[0].unique_participants);
     }
 
     static deleteProblem = async (id: string) => {
@@ -182,8 +190,8 @@ export class ContestRepository {
                 point: true,
                 id: true,
                 problem: {
-                    select: { id: true, title: true, difficulty: true, testcaseWeight: true, problemWeight: true}
-                }, 
+                    select: { id: true, title: true, difficulty: true, testcaseWeight: true, problemWeight: true }
+                },
             }
         });
         return rawData;
@@ -248,12 +256,6 @@ export class ContestRepository {
                 subject: {
                     select: { id: true, name: true },
                 },
-                // 👇 Count participants
-                _count: {
-                    select: {
-                        batchContests: true, // number of batches (not students yet)
-                    },
-                },
                 batchContests: {
                     select: {
                         batch: {
@@ -268,21 +270,9 @@ export class ContestRepository {
             },
         });
 
-        // Flatten into participant counts
-        const contestsWithCounts = rawData.map(contest => {
-            const studentIds = contest.batchContests.flatMap(bc =>
-                bc.batch.students.map(s => s.id)
-            );
-            const uniqueCount = new Set(studentIds).size;
-            return {
-                ...contest,
-                batchContests: undefined,
-                _count: undefined,
-                participants: uniqueCount,
-            };
-        });
+        
 
-        return contestsWithCounts;
+        return rawData;
     };
 
     static getTimings = async (contestId: string) => {

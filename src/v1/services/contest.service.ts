@@ -316,13 +316,17 @@ export class ContestService {
         if (!contests) {
             throw new ApiError("Failed to fetch past contests.");
         }
-        const newData = contests.map((contest) => ({
+        const countParticipants = await Promise.all(
+            contests.map((contest) => (ContestRepository.getCountOfParticipants(contest.id)))
+        );
+
+        const newData = contests.map((contest, idx) => ({
             ...cleanObject(contest),
             allowedLanguages: contest?.allowedLanguages.map(lang => ({...lang.language})),
             tags: contest?.tags.map((tag) => ({ ...tag.tag })),
-
+            participants: countParticipants[idx]
         }));
-        return  newData;
+        return newData;
     }
 }
 
