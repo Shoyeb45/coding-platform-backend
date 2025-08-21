@@ -86,7 +86,7 @@ export class ContestRepository {
 
     static update = async (id: string, data: Prisma.ContestUpdateInput) => {
         console.log(data);
-        
+
         const updatedContest = await prisma.contest.update({
             where: { id },
             data,
@@ -118,7 +118,7 @@ export class ContestRepository {
                         }
                     }
                 }, subject: {
-                    select: { id: true, name: true }   
+                    select: { id: true, name: true }
                 }
             }
         });
@@ -128,14 +128,14 @@ export class ContestRepository {
     }
 
     static addProblemToContest = async (contestId: string, data: TContestProblem) => {
-        const problemData = data.problemIds.map((id) => ({ problemId: id, contestId}));
+        const problemData = data.problemIds.map((id) => ({ problemId: id, contestId }));
         return await prisma.contestProblem.createMany({
             data: problemData
         });
     }
 
     static deleteProblem = async (id: string) => {
-        return await prisma.contestProblem.delete({ where: { id }});
+        return await prisma.contestProblem.delete({ where: { id } });
     }
     static getAllProblems = async (contestId: string) => {
         const rawData = await prisma.contestProblem.findMany({
@@ -152,7 +152,7 @@ export class ContestRepository {
 
     static getContestsForUser = async (createdBy: string) => {
         const rawData = await prisma.contest.findMany({
-            where: { 
+            where: {
                 createdBy,
                 endTime: {
                     gt: new Date()
@@ -176,10 +176,10 @@ export class ContestRepository {
         });
         return rawData;
     }
-    
+
     static getPastContests = async (createdBy: string) => {
         const rawData = await prisma.contest.findMany({
-            where: { 
+            where: {
                 createdBy,
                 endTime: {
                     lt: new Date()
@@ -199,7 +199,7 @@ export class ContestRepository {
                         }
                     }
                 }, subject: {
-                    select: {id: true, name: true}
+                    select: { id: true, name: true }
                 }
             }
         });
