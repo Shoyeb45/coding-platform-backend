@@ -272,4 +272,7 @@ router.route("/:id")
 router.route("/:id")
     .patch(validate(ZProblem), asyncHandler(ProblemController.updateQuestion));
 
+
+router.route("/detail/:problemId")
+    .get(asyncHandler(ProblemController.getProblemDetails));
 export default router;

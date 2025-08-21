@@ -28,6 +28,12 @@ export const ZContestMod = z.object({
     moderatorIds: z.array(z.string()) 
 });
 
+export const ZProblemContestEdit = z.object({
+    point: z.int32().min(1, "Atleast 1 point should be there for problem.").max(10, "Atmost 10 point is there for problem."),
+    contestId: z.string()
+})
+
+export type TProblemContestEdit = z.infer<typeof ZProblemContestEdit>;
 export type TContestMod = z.infer<typeof ZContestMod>;
 export type TContestProblem = z.infer<typeof ZContestProblem>;
 export type TContest = z.infer<typeof ZContest>

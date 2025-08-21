@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { ApiError } from "../../utils/ApiError";
 import { logger } from "../../utils/logger";
 import { prisma } from "../../utils/prisma";
-import { TContest, TContestCreate, TContestMod, TContestProblem } from "../types/contest.type";
+import { TContest, TContestCreate, TContestMod, TContestProblem, TProblemContestEdit } from "../types/contest.type";
 import { TProblemCreate, TProblemFilter, TProblemModerator, TProblemUpdate } from "../types/problem.type";
 import { cleanObject } from "../../utils/helper";
 
@@ -103,6 +103,16 @@ export class ContestRepository {
         return rawData;
     }
 
+    static updatePointsOfProblem = async (id: string, data: TProblemContestEdit) => {
+        return await prisma.contestProblem.update({
+            where: { id },
+            data: {
+                point: data.point
+            }, select: {
+                id: true, point: true
+            }
+        })
+    }
     static getProblemContest = async (problemId: string, contestId: string) => {
         return await prisma.contestProblem.findFirst({
             where: { problemId, contestId },

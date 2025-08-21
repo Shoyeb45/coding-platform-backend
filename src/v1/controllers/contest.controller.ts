@@ -55,6 +55,13 @@ export class ContestController {
         );
     } 
 
+    static editProblemPointOfContest = async (req: Request, res: Response) => {
+        const id = req.params.id;
+        const updatedProblem = await ContestService.editProblemPointOfContest(req.user, id, req.body);
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully changed the point of the problem in given contest.", { updatedProblem })
+        );
+    }
     
 
     static getAllModerators = async (req: Request, res: Response) => {

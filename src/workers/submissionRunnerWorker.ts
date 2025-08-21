@@ -53,6 +53,14 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
 
                         if (passed) passedCount++;
 
+                        let status = passed ? "Accepted": "Wrong Answer";
+                        
+                        if (result.compileError) {
+                            status = "Compilation Error";
+                        } else if (result.error) {
+                            status = "Runtime Error";
+                        }
+
                         allResults.push({
                             status: result.status,
                             weight: job.data.testcases[testCaseIndex].weight ?? 1,

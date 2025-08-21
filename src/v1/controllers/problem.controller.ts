@@ -61,6 +61,13 @@ export class ProblemController {
         );
     }
 
+    static getProblemDetails = async (req: Request, res: Response) => {
+        const problemId = req.params.problemId;
+        const data = await ProblemService.getProblemDetails(problemId);
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully fetched details of the problem.", data)
+        );
+    }
     static getAllProblemsOfCreator = async (req: Request, res: Response, next: NextFunction) => {
 
         const creatorId = req.user?.id;

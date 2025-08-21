@@ -1,3 +1,4 @@
+import { title } from "process";
 import { logger } from "../../utils/logger";
 import { prisma } from "../../utils/prisma";
 import { TProblemCreate, TProblemDriver, TProblemDriverUpdate, TProblemFilter, TProblemModerator, TProblemUpdate } from "../types/problem.type";
@@ -138,6 +139,26 @@ export class ProblemRepository {
 
         return problems;
     }
+
+    static getProblemDetails = async (id: string) => {
+        const data = await prisma.problem.findFirst({
+            where: { id },
+            select: {
+                id: true, title: true, problemStatement: true, constraints: true,
+                problemLanguage: {
+                    select: {
+                        id: true, boilerplate: true, language: {
+                            select: {
+                                id: true, name: true, judge0Code: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        return data;
+    } 
 
     static updateProblem = async (id: string, data: TProblemUpdate) => {
         const updateProblem = await prisma.problem.update({

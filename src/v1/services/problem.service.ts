@@ -7,6 +7,8 @@ import { ApiResponse } from "../../utils/ApiResponse";
 import { ZodSafeParseResult } from "zod";
 import { HTTP_STATUS } from "../../config/httpCodes";
 import { cleanObject, convertToBase64, convertToNormalString } from "../../utils/helper";
+import { TestcaseRepository } from "../repositories/testcase.repository";
+import { S3Service } from "../../utils/s3client";
 
 export class ProblemService {
     static createProblem = async (problemData: TProblemCreate, res: Response) => {
@@ -86,6 +88,37 @@ export class ProblemService {
     }
 
 
+    static getProblemDetails = async (problemId: string) => {
+        if (!problemId) {
+            throw new ApiError("No problem id found", HTTP_STATUS.BAD_REQUEST);
+        }
+
+        const problemDetail = await ProblemRepository.getProblemDetails(problemId);
+
+        if (!problemDetail) {
+            throw new ApiError("No problem found with given id");
+        }
+        problemDetail.problemLanguage = problemDetail.problemLanguage.map((pl) => ({...pl, boilerplate: convertToNormalString(pl.boilerplate)}));
+
+        let testcases = await TestcaseRepository.getTestcases({ problemId, isSample: true });
+
+        if (!testcases) {
+            throw new ApiError("Failed to fetch sample testcases from database.");
+        }
+
+        const data = await Promise.all(
+            testcases.map(async (testcase) => ({
+                ...testcase,
+                input: await S3Service.getInstance().getFileContent(testcase.input),
+                output: await S3Service.getInstance().getFileContent(testcase.output),
+            }))
+        );
+
+        return {
+            problemDetail,
+            sampleTestcases: data
+        };
+    }
     static getAllProblems = async (teacherId: string | undefined, parsedData: ZodSafeParseResult<TProblemFilter>, res: Response) => {
         if (!teacherId) {
             throw new ApiError("Teacher id not found", HTTP_STATUS.UNAUTHORIZED);

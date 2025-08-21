@@ -20,7 +20,7 @@ const router = Router();
         languageId: string;
         code: string;
         submissionTime: string;
-        languageCode: string;
+        languageCode: string;  // judge0 code
         contestId?: string | undefined;
     }
  * @returns

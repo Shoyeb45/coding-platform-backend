@@ -1,6 +1,7 @@
 import { HTTP_STATUS } from "../../config/httpCodes";
 import { submissionQueue } from "../../queues/codeExecution.queue";
 import { ApiError } from "../../utils/ApiError";
+import { convertToNormalString } from "../../utils/helper";
 import { logger } from "../../utils/logger";
 import { RedisClient } from "../../utils/redisClient";
 import { S3Service } from "../../utils/s3client";
@@ -85,6 +86,9 @@ export class SubmissionService {
         if (!driverCodes?.prelude || !driverCodes?.driverCode) {
             throw new ApiError("No driver code found for given problem");
         }
+        driverCodes.prelude = convertToNormalString(driverCodes.prelude);
+        driverCodes.driverCode = convertToNormalString(driverCodes.driverCode);
+        driverCodes.boilerplate = convertToNormalString(driverCodes.boilerplate);
 
         // Concatenate code
         submissionData.code = `${driverCodes.prelude}\n\n${submissionData.code}\n\n${driverCodes.driverCode}`;

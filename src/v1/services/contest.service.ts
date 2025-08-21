@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { TContest, TContestCreate, TContestMod, TContestProblem } from "../types/contest.type"
+import { TContest, TContestCreate, TContestMod, TContestProblem, TProblemContestEdit } from "../types/contest.type"
 import { logger } from "../../utils/logger"
 import { ContestRepository } from "../repositories/contest.repository";
 import { ApiError } from "../../utils/ApiError";
@@ -132,6 +132,20 @@ export class ContestService {
         return moderators.map((mod) => ({ moderatorId: mod.id, ...mod.moderator }));
     }
 
+    static editProblemPointOfContest = async(user: Express.Request["user"], id: string, data: TProblemContestEdit) => {
+        this.authenticateTeacher(user);
+        
+        if (!(await this.checkContest(user?.id, data.contestId))) {
+            throw new ApiError("You are not allowed to update the points of the problem.", HTTP_STATUS.UNAUTHORIZED);
+        }
+
+        const updatedProblemContest = await ContestRepository.updatePointsOfProblem(id, data);
+
+        if (!updatedProblemContest) {
+            throw new ApiError("Failed to update the point of the problem.");
+        }
+        return updatedProblemContest;
+    }
     static deleteContest = async (user: Express.Request["user"], contestId: string) => {
         this.authenticateTeacher(user);
         if (!contestId) {

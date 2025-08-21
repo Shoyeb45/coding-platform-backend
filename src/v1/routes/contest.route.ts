@@ -2,7 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ContestController } from "../controllers/contest.controller";
 import { validate } from "../../middlewares/validate.middleware";
-import { ZContest, ZContestCreate, ZContestMod, ZContestProblem } from "../types/contest.type";
+import { ZContest, ZContestCreate, ZContestMod, ZContestProblem, ZProblemContestEdit } from "../types/contest.type";
 import { authenticateUser } from "../../middlewares/auth.middleware";
 
 const router = Router();
@@ -270,6 +270,11 @@ router.route("/problem/:contestId")
 router.route("/problem/:id")
     .delete(asyncHandler(ContestController.deleteProblemFromContest));
 
+/**
+ * 
+ */
+router.route("/problem/:id")
+    .patch(validate(ZProblemContestEdit), asyncHandler(ContestController.editProblemPointOfContest));
 
 /**
  * POST /moderators/:contestId
