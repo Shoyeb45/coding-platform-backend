@@ -29,4 +29,16 @@ export interface SubmissionQueueType {
     testcases: TestcaseData[],
 }
 
+export type SubmissionCreate = {
+    contestId?: string,
+    studentId: string,
+    problemId: string, 
+    languageId: string,
+    code: string,
+    status: string,
+    executionTime: number,
+    memoryUsed: number,
+    submittedAt: string,
+    score: number
+}
 export type TSubmission = z.infer<typeof ZSubmission>;

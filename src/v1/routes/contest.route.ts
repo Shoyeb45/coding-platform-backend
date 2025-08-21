@@ -65,6 +65,7 @@ router.route("/")
  */
 router.route("/past")
     .get(asyncHandler(ContestController.getPastContests));
+    
 /**
  * GET /
  * @description Get all contests upcoming and live contests of the teacher

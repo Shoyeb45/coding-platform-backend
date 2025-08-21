@@ -201,7 +201,7 @@ export class ContestService {
             batchContests: batchContests.map(bc => ({ id: bc.batch.id, name: bc.batch.name })),
             contestModerators: contestModerators.map(cm => ({ id: cm.moderator.id, name: cm.moderator.name, email: cm.moderator.email })),
             tags: tags.map(tag => ({ id: tag.tag.id, name: tag.tag.name })),
-            allowedLanguages: allowedLanguages.map(al => ({ id: al.language.id, name: al.language.name }))
+            allowedLanguages: allowedLanguages.map(al => ({ id: al.language.id, name: al.language.name })),
         }
         return newData;
     }
@@ -289,4 +289,8 @@ type UpdateData = {
     tags: { tag: { name: string; id: string; } }[]; id: string;
     allowedLanguages: { language: { name: string; id: string; } }[];
     contestModerators: { moderator: { name: string; id: string; email: string; } }[];
+    subject: {
+        name: string;
+        id: string;
+    } | null
 }

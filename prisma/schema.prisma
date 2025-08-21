@@ -248,8 +248,10 @@ model Contest {
   endTime           DateTime           @default(now()) @map("end_time")
   createdBy         String             @map("created_by")
   isOpen            Boolean            @default(false) @map("is_open")
+  isPublished       Boolean               @default(false) @map("is_published")
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @updatedAt @map("updated_at")
+  subjectId         String?               @map("subject_id")
   allowedLanguages  AllowedLanguage[]
   batchContests     BatchContest[]
   creator           Teacher            @relation(fields: [createdBy], references: [id], onDelete: Cascade)
@@ -257,6 +259,8 @@ model Contest {
   contestProblems   ContestProblem[]
   tags              ContestTag[]
   submissions       Submission[]
+  subject           Subject?              @relation(fields: [subjectId], references: [id])
+  contestLeaderboard ContestLeaderboard[]
 
   @@index([createdBy])
   @@index([startTime])
@@ -264,6 +268,27 @@ model Contest {
   @@index([isOpen])
   @@index([title])
   @@map("contest")
+}
+
+
+// Model to store contest leaderboard data (calculated and cached)
+model ContestLeaderboard {
+  id               String   @id @default(cuid())
+  contestId        String   @map("contest_id")
+  studentId        String   @map("student_id")
+  rank             Int
+  score            Float
+  questionsSolved  Int      @map("questions_solved")
+  lastSubmittedAt  DateTime? @map("last_submitted_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  contest          Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  student          Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([contestId, studentId])
+  @@index([contestId, rank])
+  @@index([studentId])
+  @@map("contest_leaderboard")
 }
 
 model BatchContest {
@@ -307,6 +332,25 @@ model AllowedLanguage {
   @@index([languageId])
   @@index([contestId])
   @@map("allowed_language")
+}
+
+
+// Model to store overall student statistics
+model StudentStats {
+  id                    String   @id @default(cuid())
+  studentId             String   @unique @map("student_id")
+  currentRank           Int?     @map("current_rank")
+  totalExams            Int      @default(0) @map("total_exams")
+  totalQuestionsSolved  Int      @default(0) @map("total_questions_solved")
+  totalScore            Float    @default(0) @map("total_score")
+  averageScore          Float    @default(0) @map("average_score")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  student               Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([currentRank])
+  @@index([totalScore])
+  @@map("student_stats")
 }
 
 model ContestModerator {
@@ -534,6 +578,8 @@ model Student {
   examMarks          StudentExamMarks[]
   studentLogs        StudentLog[]
   submissions        Submission[]
+  contestLeaderboard ContestLeaderboard[]
+  studentStats       StudentStats[]
 }
 
 model Behaviour {
@@ -813,6 +859,7 @@ model Subject {
   examMarks   StudentExamMarks[]
   semester    Semester           @relation(fields: [semester_id], references: [id], onDelete: Cascade)
   teacher     Teacher            @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+  contests    Contest[]
 
   @@index([semester_id], map: "subject_semester_id_idx")
   @@index([teacher_id], map: "subject_teacher_id_idx")

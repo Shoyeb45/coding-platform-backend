@@ -68,6 +68,8 @@ export class ContestRepository {
                     select: {
                         id: true, name: true, email: true, designation: true
                     }
+                }, subject: {
+                    select: { id: true, name: true }
                 }
             }
         });
@@ -115,6 +117,8 @@ export class ContestRepository {
                             select: { id: true, name: true }
                         }
                     }
+                }, subject: {
+                    select: { id: true, name: true }   
                 }
             }
         });
@@ -194,6 +198,8 @@ export class ContestRepository {
                             select: { id: true, name: true }
                         }
                     }
+                }, subject: {
+                    select: {id: true, name: true}
                 }
             }
         });

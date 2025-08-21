@@ -14,6 +14,7 @@ export const ZContest = z.object({
     topics: z.array(z.string()).optional(),
     endTime: z.iso.datetime().optional(),
     languages: z.array(z.string()).optional(),
+    subjectId: z.string().optional()
 });
 
 export const ZContestProblem = z.object({
