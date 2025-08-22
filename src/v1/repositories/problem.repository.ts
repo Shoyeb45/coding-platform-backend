@@ -153,6 +153,12 @@ export class ProblemRepository {
                             }
                         }
                     }
+                }, problemTags: {
+                    select: {
+                        tag: {
+                            select: { id: true, name: true }
+                        }
+                    }
                 }
             }
         });

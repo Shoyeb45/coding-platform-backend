@@ -122,6 +122,60 @@ export class ContestRepository {
         });
     }
 
+
+    static getProblemDetails = async (contestId: string, problemId: string) => {
+        const data = await prisma.problem.findFirst({
+            where: {
+                id: problemId,
+                contestProblems: {
+                    some: {
+                        contestId: contestId,
+                    },
+                },
+            },
+            select: {
+                id: true,
+                title: true,
+                problemStatement: true,
+                constraints: true,
+                problemTags: {
+                    select: {
+                        tag: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                },
+                problemLanguage: {
+                    where: {
+                        language: {
+                            // Only include languages that are allowed in this contest
+                            allowedLanguages: {
+                                some: {
+                                    contestId: contestId,
+                                },
+                            },
+                        },
+                    },
+                    select: {
+                        id: true,
+                        boilerplate: true,
+                        language: {
+                            select: {
+                                id: true,
+                                name: true,
+                                judge0Code: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        return data;
+    };
     static deleteModerator = async (id: string) => {
         const deletedMod = await prisma.contestModerator.delete({
             where: { id }
@@ -420,4 +474,25 @@ GROUP BY ci.id, ci.title, ci.description, ci.start_time, ci.end_time, ci.is_publ
 
         return result; // contest info + leaderboard
     };
+
+
+
+    static getProblemFromTheContest = async (problemId: string, contestId: string) => {
+        return await prisma.contestProblem.findFirst({
+            where: { problemId, contestId },
+            select: {
+                id: true, contest: {
+                    select: {
+                        allowedLanguages: {
+                            select: {
+                                language: {
+                                    select: { id: true }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 } 

@@ -4,8 +4,10 @@ import { logger } from "../../utils/logger"
 import { ContestRepository } from "../repositories/contest.repository";
 import { ApiError } from "../../utils/ApiError";
 import { HTTP_STATUS } from "../../config/httpCodes";
-import { cleanObject } from "../../utils/helper";
+import { cleanObject, convertToNormalString } from "../../utils/helper";
 import { ProblemRepository } from "../repositories/problem.repository";
+import { TestcaseRepository } from "../repositories/testcase.repository";
+import { S3Service } from "../../utils/s3client";
 
 
 export class ContestService {
@@ -98,6 +100,46 @@ export class ContestService {
             throw new ApiError("Failed to delete moderator from contest.", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
         return deletedMod;
+    }
+
+    static getProblemDetailsForTheContest = async (contestId: string, problemId: string) => {
+        if (!problemId.trim()) {
+            throw new ApiError("No problem id found.", HTTP_STATUS.BAD_REQUEST);
+        }
+        const [problemDetail, testcases] = await Promise.all([
+            ContestRepository.getProblemDetails(contestId, problemId),
+            TestcaseRepository.getTestcases({ problemId, isSample: true })
+        ]); 
+
+        if (!problemDetail) {
+            throw new ApiError("Failed to fetch problem details.");
+        }
+        if (!testcases) {
+            throw new ApiError("Failed to fetch sample testcases from database.");
+        }
+        
+        problemDetail.problemLanguage = problemDetail.problemLanguage.map((pl) => ({ 
+            ...pl, 
+            boilerplate: convertToNormalString(pl.boilerplate) 
+        }));
+
+
+        // fetch sample testcases
+        const data = await Promise.all(
+            testcases.map(async (testcase) => ({
+                ...testcase,
+                input: await S3Service.getInstance().getFileContent(testcase.input),
+                output: await S3Service.getInstance().getFileContent(testcase.output),
+            }))
+        );
+        const formattedData = { 
+            problemDetail: {
+                ...problemDetail,
+                problemTags: problemDetail.problemTags.map((tag) => ({ ...tag.tag }))
+            }, 
+            testcases: data
+        };
+        return formattedData;
     }
 
     static deleteProblemFromContest = async (user: Express.Request["user"], id: string) => {

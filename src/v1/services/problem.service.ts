@@ -99,7 +99,7 @@ export class ProblemService {
             throw new ApiError("No problem found with given id");
         }
         problemDetail.problemLanguage = problemDetail.problemLanguage.map((pl) => ({...pl, boilerplate: convertToNormalString(pl.boilerplate)}));
-
+        
         let testcases = await TestcaseRepository.getTestcases({ problemId, isSample: true });
 
         if (!testcases) {
@@ -115,7 +115,10 @@ export class ProblemService {
         );
 
         return {
-            problemDetail,
+            problemDetail: {
+                ...problemDetail, 
+                problemTags: problemDetail.problemTags.map((pt) => ({ ...pt.tag }))
+            },
             sampleTestcases: data
         };
     }

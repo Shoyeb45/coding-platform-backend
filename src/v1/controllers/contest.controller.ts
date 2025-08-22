@@ -112,6 +112,15 @@ export class ContestController {
             new ApiResponse("Successfully fetched contest details with give id.", { contestDetails })
         )
     }
+
+    static getProblemDetailsForTheContest = async (req: Request, res: Response) => {
+        const problemId = req.params.problemId;
+        const contestId = req.query.contestId as string;
+        const data = await ContestService.getProblemDetailsForTheContest(contestId, problemId);
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully fetched problem details.", data)
+        );
+    }
     
     static addProblemToContest = async (req: Request, res: Response) => {
         const contestId = req.params.contestId;

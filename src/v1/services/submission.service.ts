@@ -65,10 +65,19 @@ export class SubmissionService {
         }
 
         // Run validations concurrently where possible
-        const [isLive, isParticipant] = await Promise.all([
+        const [contestProblem, isLive, isParticipant] = await Promise.all([
+            ContestRepository.getProblemFromTheContest(submissionData.problemId, submissionData.contestId),
             this.isLiveContest(submissionData.contestId, submissionData.submissionTime),
             this.isParticipant(user?.id, submissionData.contestId)
         ]);
+
+        if (!contestProblem) {
+            throw new ApiError("This problem is not part of the contest.", HTTP_STATUS.BAD_REQUEST);
+        }
+
+        if (!contestProblem.contest.allowedLanguages.some((lang) => (lang.language.id === submissionData.languageId))) {
+            throw new ApiError("Submission language is not allowed for this contest.", HTTP_STATUS.BAD_REQUEST);
+        }
 
         if (!isLive) {
             throw new ApiError("Not allowed, submission time is not within the contest time frame.", HTTP_STATUS.UNAUTHORIZED);
@@ -211,7 +220,7 @@ export class SubmissionService {
         if (!submissions) {
             throw new ApiError("No submissions found.");
         }
-        
+
         return  submissions.map((submission) => ({ 
             ...submission, 
             code: convertToNormalString(submission.code) 

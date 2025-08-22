@@ -353,4 +353,45 @@ router.route("/moderators/:moderatorId")
 router.route("/teacher/leaderboard/:contestId")
     .get(asyncHandler(ContestController.getTeacherContestLeaderboard));
     
+
+/**
+ * GET /problem/detail/:problemId?contestId=
+ * @description API to fetch problem details during contest
+ * @query contestId
+ * @returns
+"data": {
+    "problemDetail": {
+        "id": "cmek5a0oq0001n59gdt5o4lhy",
+        "title": "Two Sum",
+        "problemStatement": "Given an array of integers nums and an integer target, return the indices of the two numbers such that they add up to target. You may assume that each input would have exactly one solution, and you may not use the same element twice. You can return the answer in any order. If no answer found return -1.",
+        "constraints": "2 <= nums.length <= 10^4, -10^9 <= nums[i] <= 10^9, -10^9 <= target <= 10^9",
+        "problemTags": [{
+                "id": "cmek33xog0000f8icqcf79rwm",
+                "name": "Two Pointers"
+        }],
+        "problemLanguage": [{
+                "id": "cmelekm6e0003n56omucw75ff",
+                "boilerplate": "class Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        // Write your code here\n        return {};\n    }\n};",
+                "language": {
+                    "id": "cmek5u1j80003n5ds1sz09qbz",
+                    "name": "C++",
+                    "judge0Code": 105
+                }
+        }]
+    },
+    "testcases": [
+        {
+            "id": "cmek6i46v0000n5vwdwk7wpie",
+            "isSample": true,
+            "input": "4\n2 7 11 15\n9\n",
+            "output": "0 1\n",
+            "weight": 1,
+            "explanation": "It's simple one"
+        }
+    ]
+},
+*/
+router.route("/problem/detail/:problemId")
+    .get(asyncHandler(ContestController.getProblemDetailsForTheContest));
+
 export default router;
