@@ -47,7 +47,9 @@ export class ProblemController {
 
     static getAllProblems = async (req: Request, res: Response, next: NextFunction) => {
         const parsedData = ZProblemFilter.safeParse(req.query);
-
+        if (req.user && req.user.role !== "TEACHER" && req.user.role !== "ASSISTANT_TEACHER") {
+            throw new ApiError("Only teacher is allowed to see all the problems.", HTTP_STATUS.UNAUTHORIZED);
+        }
         await ProblemService.getAllProblems(req.user?.id, parsedData, res);
         next();
     }

@@ -123,6 +123,7 @@ export class ProblemService {
         if (!teacherId) {
             throw new ApiError("Teacher id not found", HTTP_STATUS.UNAUTHORIZED);
         }
+        
 
         if (!parsedData.success) {
             logger.error(parsedData.error)
