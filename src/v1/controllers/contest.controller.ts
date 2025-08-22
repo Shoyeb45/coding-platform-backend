@@ -2,6 +2,7 @@ import { Request, Response } from "express"
 import { ContestService } from "../services/contest.service";
 import { HTTP_STATUS } from "../../config/httpCodes";
 import { ApiResponse } from "../../utils/ApiResponse";
+import { ProblemService } from "../services/problem.service";
 
 
 
@@ -84,6 +85,14 @@ export class ContestController {
 
         res.status(HTTP_STATUS.CREATED).json(
             new ApiResponse("Contest created successfully", { contestDetail })
+        );
+    }
+
+    static getTeacherContestLeaderboard = async (req: Request, res: Response) => {
+        const contestId = req.params.contestId;
+        const data = await ContestService.getTeacherContestLeaderboard(req.user, contestId);
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully fetched contest leaderboard.", data)
         );
     }
 

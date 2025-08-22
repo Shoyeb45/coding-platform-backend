@@ -325,4 +325,32 @@ router.route("/moderators/:contestId")
 router.route("/moderators/:moderatorId")
     .delete(asyncHandler(ContestController.deleteModerator));
 
+
+/**
+ * GET /teacher/leaderboard/:contestId
+ * @description API to get the leaderboard of the contest with contest information
+ * @param contestId -> Id of the contest
+ * @returns
+ *  "data": {
+        "contestId": "cmek7tx2u0001n5qwe2fg75cn",
+        "title": "DSA IA 2",
+        "description": "Hard java programming contest.",
+        "startDate": "2025-08-20T15:00:00.000Z",
+        "endDate": "2025-08-21T18:06:00.000Z",
+        "maximumPossibleScore": 400,
+        "leaderboard": [
+            {
+                "studentId": "0780f3fc-080a-404c-a3e0-09cce8c6e3cb",
+                "studentName": "Shoyeb Student",
+                "studentEmail": "shoyeb.sot010069@pwioi.com",
+                "totalScore": 130,
+                "questionsSolved": 1,
+                "rank": 1
+            }
+        ]
+    },
+ */
+router.route("/teacher/leaderboard/:contestId")
+    .get(asyncHandler(ContestController.getTeacherContestLeaderboard));
+    
 export default router;

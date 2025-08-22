@@ -75,7 +75,7 @@ export class ContestService {
             if (!existingContest) {
                 throw new ApiError("No contest found with given id.", HTTP_STATUS.BAD_REQUEST);
             }
-            const now = new Date(); 
+            const now = new Date();
             if (existingContest.endTime > now) {
                 throw new ApiError("You can't make contest publish which is not yet done.");
             }
@@ -84,7 +84,7 @@ export class ContestService {
                 throw new ApiError("You are not allowed to make this contest publish.");
             }
         }
-        
+
         const data = await ContestRepository.publishContest(contestId);
         return data;
     }
@@ -132,9 +132,9 @@ export class ContestService {
         return moderators.map((mod) => ({ moderatorId: mod.id, ...mod.moderator }));
     }
 
-    static editProblemPointOfContest = async(user: Express.Request["user"], id: string, data: TProblemContestEdit) => {
+    static editProblemPointOfContest = async (user: Express.Request["user"], id: string, data: TProblemContestEdit) => {
         this.authenticateTeacher(user);
-        
+
         if (!(await this.checkContest(user?.id, data.contestId))) {
             throw new ApiError("You are not allowed to update the points of the problem.", HTTP_STATUS.UNAUTHORIZED);
         }
@@ -302,7 +302,7 @@ export class ContestService {
         }
         return {
             ...this.formatContestData(contest),
-            problems: problems.map((problem) => ({...problem}))
+            problems: problems.map((problem) => ({ ...problem }))
         };
     }
 
@@ -336,11 +336,41 @@ export class ContestService {
 
         const newData = contests.map((contest, idx) => ({
             ...cleanObject(contest),
-            allowedLanguages: contest?.allowedLanguages.map(lang => ({...lang.language})),
+            allowedLanguages: contest?.allowedLanguages.map(lang => ({ ...lang.language })),
             tags: contest?.tags.map((tag) => ({ ...tag.tag })),
             participants: countParticipants[idx]
         }));
         return newData;
+    }
+
+    // leaderboard
+    static getTeacherContestLeaderboard = async (user: Express.Request["user"], contestId: string) => {
+        this.authenticateTeacher(user);
+        if (!contestId) {
+            throw new ApiError("No contest id found.", HTTP_STATUS.BAD_REQUEST);
+        }
+
+        if (!(await this.checkContest(user?.id, contestId))) {
+            throw new ApiError("You are not allowed to fetch the leaderboard data.");
+        }
+
+        const leaderboard = await ContestRepository.getContestLeaderboardData(contestId);
+
+        if (!leaderboard) {
+            throw new ApiError("Failed to fetch the leaderboard for contest.");
+        }
+
+        const data = leaderboard.map((lead) => ({ 
+            ...lead, 
+            maximumPossibleScore: Number(lead.maximumPossibleScore), 
+            leaderboard: lead.leaderboard.map((stud, idx) => ({ 
+                ...stud,
+                rank: idx + 1, 
+                totalScore: Number(stud.totalScore) 
+            })) 
+        }));
+
+        return data[0];
     }
 }
 
