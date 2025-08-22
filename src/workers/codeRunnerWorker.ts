@@ -38,11 +38,18 @@ export const codeRunnerWorker = new Worker<QueueDataType, CodeRunnerResult>(
 
 
         const passed = result.status === 'Accepted' && result.output.trim() === stdout.trim();
+        let status = passed ? "Accepted" : "Wrong Answer";
+
+        if (result.compileError) {
+          status = "Compilation Error";
+        } else if (result.error) {
+          status = "Runtime Error";
+        }
 
         if (passed) passedCount++;
 
         results.push({
-          status: result.status,
+          status: status,
           output: result.output,
           runtimeError: result.error,
           compilerError: result?.compileError,
