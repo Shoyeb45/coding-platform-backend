@@ -328,7 +328,7 @@ export class ContestService {
     }
 
     static getAllProblems = async (user: Express.Request["user"], contestId: string) => {
-        this.authenticateTeacher(user);
+        // this.authenticateTeacher(user);
         if (!contestId) {
             throw new ApiError("No contest id found to fetch problem.", HTTP_STATUS.BAD_GATEWAY);
         }
