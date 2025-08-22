@@ -63,5 +63,7 @@ router.route("/contest/upcoming/")
     },
  */
 router.route("/problems")
-    .get(authenticateUser, asyncHandler(StudentController.getAllPublicProblems))
+    .get(authenticateUser, asyncHandler(StudentController.getAllPublicProblems));
+
+    
 export default router;

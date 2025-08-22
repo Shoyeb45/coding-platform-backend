@@ -1,6 +1,7 @@
 import { HTTP_STATUS } from "../../config/httpCodes";
 import { codeRunnerQueue } from "../../queues/codeExecution.queue";
 import { ApiError } from "../../utils/ApiError";
+import { convertToNormalString } from "../../utils/helper";
 import { RedisClient } from "../../utils/redisClient";
 import { ProblemRepository } from "../repositories/problem.repository";
 import { QueueDataType, RedisSubmission } from "../types/queue.type";
@@ -16,6 +17,9 @@ export class RunService {
             throw new ApiError("No driver code found for given problem");
         } 
         
+        driverCodes.prelude = convertToNormalString(driverCodes.prelude);
+        driverCodes.boilerplate = convertToNormalString(driverCodes.boilerplate);
+        driverCodes.driverCode = convertToNormalString(driverCodes.driverCode);
         // concatenate code
         data.code = `${driverCodes?.prelude}\n\n${data.code}\n\n${driverCodes?.driverCode}`;
 

@@ -333,6 +333,7 @@ export class ContestRepository {
                 description: string;
                 startDate: Date;
                 endDate: Date;
+                isPublished: boolean;
                 maximumPossibleScore: number;
                 leaderboard: {
                     studentId: string;
@@ -343,79 +344,80 @@ export class ContestRepository {
                 }[];
             }[]
         >`
-  WITH best_scores AS (
-      SELECT 
-          s.student_id, 
-          s.problem_id, 
-          s.contest_id,
-          MAX(s.score) AS best_score
-      FROM "submission" s
-      WHERE s.contest_id = ${contestId}
-      GROUP BY s."student_id", s."problem_id", s."contest_id"
-  ),
-  weighted_scores AS (
-      SELECT 
-          bs.student_id,
-          bs.problem_id,
-          bs.contest_id,
-          bs.best_score,
-          cp.point,
-          (bs.best_score * cp.point) AS weighted_score
-      FROM best_scores bs
-      JOIN "contest_problem" cp ON cp.contest_id = bs.contest_id AND cp.problem_id = bs.problem_id
-  ),
-  leaderboard AS (
-      SELECT
-          ws.student_id,
-          st.name AS student_name,
-          st.email AS student_email,
-          SUM(ws.weighted_score) AS total_score,
-          COUNT(CASE WHEN ws.best_score > 0 THEN 1 END) AS questions_solved
-      FROM weighted_scores ws
-      JOIN "Student" st ON st.id = ws.student_id
-      GROUP BY ws.student_id, st.name, st.email
-      ORDER BY total_score DESC, questions_solved DESC
-  ),
-  contest_info AS (
-      SELECT c."id", c."title", c."description", c."start_time", c."end_time"
-      FROM "contest" c
-      WHERE c."id" = ${contestId}
-  ),
-  max_possible_score AS (
-      SELECT 
-          cp.contest_id,
-          SUM(cp.point * (p."problemWeight" + p."testcaseWeight")) AS maximum_score
-      FROM "contest_problem" cp
-      JOIN "problem" p ON p.id = cp.problem_id
-      WHERE cp.contest_id = ${contestId}
-      GROUP BY cp.contest_id
-  )
-  SELECT 
-      ci."id" AS "contestId",
-      ci."title",
-      ci."description",
-      ci."start_time" AS "startDate",
-      ci."end_time" AS "endDate",
-      COALESCE(mps.maximum_score, 0) AS "maximumPossibleScore",
-      COALESCE(
-          json_agg(
-              json_build_object(
-                  'studentId', lb.student_id,
-                  'studentName', lb.student_name,
-                  'studentEmail', lb.student_email,
-                  'totalScore', lb.total_score,
-                  'questionsSolved', lb.questions_solved
-              ) ORDER BY lb.total_score DESC, lb.questions_solved DESC
-          ) FILTER (WHERE lb.student_id IS NOT NULL),
-          '[]'::json
-      ) AS leaderboard
-  FROM contest_info ci
-  LEFT JOIN max_possible_score mps ON mps.contest_id = ci."id"
-  LEFT JOIN leaderboard lb ON true
-  GROUP BY ci.id, ci.title, ci.description, ci.start_time, ci.end_time, mps.maximum_score;
-  `;
+WITH best_scores AS (
+    SELECT 
+        s.student_id, 
+        s.problem_id, 
+        s.contest_id,
+        MAX(s.score) AS best_score
+    FROM "submission" s
+    WHERE s.contest_id = ${contestId}
+    GROUP BY s."student_id", s."problem_id", s."contest_id"
+),
+weighted_scores AS (
+    SELECT 
+        bs.student_id,
+        bs.problem_id,
+        bs.contest_id,
+        bs.best_score,
+        cp.point,
+        (bs.best_score * cp.point) AS weighted_score
+    FROM best_scores bs
+    JOIN "contest_problem" cp ON cp.contest_id = bs.contest_id AND cp.problem_id = bs.problem_id
+),
+leaderboard AS (
+    SELECT
+        ws.student_id,
+        st.name AS student_name,
+        st.email AS student_email,
+        SUM(ws.weighted_score) AS total_score,
+        COUNT(CASE WHEN ws.best_score > 0 THEN 1 END) AS questions_solved
+    FROM weighted_scores ws
+    JOIN "Student" st ON st.id = ws.student_id
+    GROUP BY ws.student_id, st.name, st.email
+    ORDER BY total_score DESC, questions_solved DESC
+),
+contest_info AS (
+    SELECT c."id", c."title", c."description", c."start_time", c."end_time", c."is_published"
+    FROM "contest" c
+    WHERE c."id" = ${contestId}
+),
+max_possible_score AS (
+    SELECT 
+        cp.contest_id,
+        SUM(cp.point * (p."problemWeight" + p."testcaseWeight")) AS maximum_score
+    FROM "contest_problem" cp
+    JOIN "problem" p ON p.id = cp.problem_id
+    WHERE cp.contest_id = ${contestId}
+    GROUP BY cp.contest_id
+)
+SELECT 
+    ci."id" AS "contestId",
+    ci."title",
+    ci."description",
+    ci."start_time" AS "startDate",
+    ci."end_time" AS "endDate",
+    ci."is_published" AS "isPublished",
+    COALESCE(mps.maximum_score, 0) AS "maximumPossibleScore",
+    COALESCE(
+        json_agg(
+            json_build_object(
+                'studentId', lb.student_id,
+                'studentName', lb.student_name,
+                'studentEmail', lb.student_email,
+                'totalScore', lb.total_score,
+                'questionsSolved', lb.questions_solved
+            ) ORDER BY lb.total_score DESC, lb.questions_solved DESC
+        ) FILTER (WHERE lb.student_id IS NOT NULL),
+        '[]'::json
+    ) AS leaderboard
+FROM contest_info ci
+LEFT JOIN max_possible_score mps ON mps.contest_id = ci."id"
+LEFT JOIN leaderboard lb ON true
+GROUP BY ci.id, ci.title, ci.description, ci.start_time, ci.end_time, ci.is_published, mps.maximum_score;
+`;
 
-        
+
         return result; // contest info + leaderboard
     };
 } 
