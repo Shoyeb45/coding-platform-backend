@@ -19,7 +19,7 @@ export class StudentService {
         this.authenticateStudent(user);
 
         const contests = await StudentRepository.getAllUpcomingContests(user?.id);
-        
+
         if (!contests) {
             throw new ApiError("Failed to fetch upcoming contest.");
         }
@@ -35,17 +35,45 @@ export class StudentService {
         if (!user?.id) {
             throw new ApiError("No user id found.", HTTP_STATUS.UNAUTHORIZED);
         }
-
-        const problems = await StudentRepository.getAllPublicProblems();
+        if (user.role !== "STUDENT") {
+            throw new ApiError("Unauthorized access, only student is allowed.", HTTP_STATUS.UNAUTHORIZED);
+        }
+        const problems = await StudentRepository.getAllPublicProblems(user.id);
 
         if (!problems) {
             throw new ApiError("Failed to find problems.");
         }
-        const newData = problems.map((problem) => (cleanObject({
+        const result = problems.map((problem) => (cleanObject({
             ...problem,
-            problemTags: undefined,
-            tags: problem.problemTags.map((tag) => ({...tag.tag}))
+            isSolved: problem.submissions.length > 0,
+            problemTags: problem.problemTags.map((pt) => ({ ...pt.tag })),
+            submissions: undefined, 
         })));
-        return newData;
+        
+    
+        return result.map((res) => (cleanObject(res)));
+    }
+
+    static getPastContests = async (user: Express.Request["user"]) => {
+        if (!user?.id) {
+            throw new ApiError("No student id found.", HTTP_STATUS.BAD_REQUEST);
+        }
+        if (user.role !== "STUDENT") {
+            throw new ApiError("Unauthorized access, only student is allowed.", HTTP_STATUS.UNAUTHORIZED);
+        }
+
+        const contests = await StudentRepository.getPastContests(user.id);
+
+        if (!contests) {
+            throw new ApiError("Failed to find all the past contests.");
+        }
+        return contests.map((contest) => ({ 
+            ...contest, 
+            maximumPossibleScore: Number(contest.maximumPossibleScore),
+            totalQuestions: Number(contest.totalQuestions),
+            questionsSolved: Number(contest.questionsSolved),
+            finalScore: Number(contest.finalScore),
+            rank: Number(contest.rank)
+        }));
     }
 }

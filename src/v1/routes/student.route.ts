@@ -33,7 +33,7 @@ const router = Router();
     ]
 },
  */
-router.route("/contest/upcoming/")
+router.route("/contest/upcoming")
     .get(authenticateUser, asyncHandler(StudentController.getUpcomingContests));
 
 
@@ -41,29 +41,48 @@ router.route("/contest/upcoming/")
  * GET /problems
  * @description API endpoint to get all the public problems
  * @returns
- "data": {
-        "problems": [
+"data": {
+    "problems": [{
+        "id": "cmelleqet0005f8eobmhyfiaw",
+        "title": "Multiply Strings",
+        "difficulty": "Easy",
+        "creator": {
+            "id": "db4706c7-f8c7-467f-9b8b-81726c9e24a7",
+            "name": "Arayn Teacher",
+            "email": "aryan.chauhan@pw.live"
+        },
+        "problemTags": [
             {
-                "id": "cmelleqet0005f8eobmhyfiaw",
-                "title": "Multiply Strings",
-                "difficulty": "Easy",
-                "creator": {
-                    "id": "db4706c7-f8c7-467f-9b8b-81726c9e24a7",
-                    "email": "aryan.chauhan@pw.live",
-                    "name": "Arayn Teacher"
-                },
-                "tags": [
-                    {
-                        "id": "cmek33xog0000f8icqcf79rwm",
-                        "name": "Two Pointers"
-                    }
-                ]
+                "id": "cmek33xog0000f8icqcf79rwm",
+                "name": "Two Pointers"
             }
-        ]
-    },
+        ],
+        "isSolved": true
+    }]
+},
  */
 router.route("/problems")
     .get(authenticateUser, asyncHandler(StudentController.getAllPublicProblems));
 
-    
+/**
+ * GET /contest/past
+ * @description API endpoint to get all the past contests of that user
+ * @returns
+"data": {
+    "pastContests": [{
+        "contest_id": "cmem2r8sb0001f8ucadp919bb",
+        "title": "subah ka hai",
+        "description": "sdfdvsfd",
+        "startDate": "2025-08-22T04:10:00.000Z",
+        "endDate": "2025-08-22T17:15:00.000Z",
+        "maximumPossibleScore": 1180,
+        "totalQuestions": 2,
+        "questionsSolved": 0,
+        "finalScore": 0,
+        "rank": 0
+    }, ... , { }]
+}
+ */
+router.route("/contest/past")
+    .get(authenticateUser, asyncHandler(StudentController.getPastContests))
 export default router;

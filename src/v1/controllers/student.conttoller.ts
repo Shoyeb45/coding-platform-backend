@@ -12,7 +12,10 @@ export class StudentController {
     }
 
     static getPastContests = async (req: Request, res: Response) => {
-
+        const pastContests = await StudentService.getPastContests(req.user);
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully fetched all the past ontests.", { pastContests })
+        );
     }
 
     static getAllPublicProblems = async (req: Request, res: Response) => {

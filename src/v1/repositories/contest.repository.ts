@@ -389,6 +389,11 @@ export class ContestRepository {
                 endDate: Date;
                 isPublished: boolean;
                 maximumPossibleScore: number;
+                creator: {
+                    id: string;
+                    name: string;
+                    email: string;
+                };
                 leaderboard: {
                     studentId: string;
                     studentName: string;
@@ -432,9 +437,24 @@ leaderboard AS (
     ORDER BY total_score DESC, questions_solved DESC
 ),
 contest_info AS (
-    SELECT c."id", c."title", c."description", c."start_time", c."end_time", c."is_published"
+    SELECT 
+        c."id", 
+        c."title", 
+        c."description", 
+        c."start_time", 
+        c."end_time", 
+        c."is_published",
+        c."created_by" AS creator_id
     FROM "contest" c
     WHERE c."id" = ${contestId}
+),
+creator_info AS (
+    SELECT 
+        t."id", 
+        t."name", 
+        t."email"
+    FROM "Teacher" t
+    WHERE t."id" = (SELECT creator_id FROM contest_info)
 ),
 max_possible_score AS (
     SELECT 
@@ -453,6 +473,11 @@ SELECT
     ci."end_time" AS "endDate",
     ci."is_published" AS "isPublished",
     COALESCE(mps.maximum_score, 0) AS "maximumPossibleScore",
+    json_build_object(
+        'id', cr.id,
+        'name', cr.name,
+        'email', cr.email
+    ) AS "creator",
     COALESCE(
         json_agg(
             json_build_object(
@@ -464,15 +489,15 @@ SELECT
             ) ORDER BY lb.total_score DESC, lb.questions_solved DESC
         ) FILTER (WHERE lb.student_id IS NOT NULL),
         '[]'::json
-    ) AS leaderboard
+    ) AS "leaderboard"
 FROM contest_info ci
 LEFT JOIN max_possible_score mps ON mps.contest_id = ci."id"
+LEFT JOIN creator_info cr ON true
 LEFT JOIN leaderboard lb ON true
-GROUP BY ci.id, ci.title, ci.description, ci.start_time, ci.end_time, ci.is_published, mps.maximum_score;
+GROUP BY ci.id, ci.title, ci.description, ci.start_time, ci.end_time, ci.is_published, mps.maximum_score, cr.id, cr.name, cr.email;
 `;
 
-
-        return result; // contest info + leaderboard
+        return result; // Return single contest object (not array)
     };
 
 
