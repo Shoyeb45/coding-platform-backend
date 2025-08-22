@@ -11,7 +11,8 @@
     "start:dbWorker": "node dist/workers/dbOperationWorker.js",
     "start": "node dist/index.js",
     "lint": "npx eslint",
-    "lint:fix": "npx eslint . --fix"
+    "lint:fix": "npx eslint . --fix",
+    "dev:workers": "concurrently \"npm run start:runnerWorker\" \"npm run start:submissionWorker\" \"npm run start:dbWorker\""
   },
   "keywords": [],
   "author": "",
@@ -45,6 +46,7 @@
     "@types/node": "^24.2.1",
     "@types/pino": "^7.0.4",
     "@types/pino-http": "^5.8.4",
+    "concurrently": "^9.2.0",
     "eslint": "^9.33.0",
     "globals": "^16.3.0",
     "jiti": "^2.5.1",

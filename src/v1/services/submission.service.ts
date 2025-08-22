@@ -48,27 +48,17 @@ export class SubmissionService {
         return now >= contestData.startTime && now <= contestData.endTime;
     }
 
-    static createSubmission = async (user: Express.Request["user"], submissionData: TSubmission) => {
-        // Early validation
-        if (!user?.id) {
-            throw new ApiError("No id associated with user found", HTTP_STATUS.UNAUTHORIZED);
-        }
-
-        if (!submissionData.contestId) {
-            // When submission is non-contest
-            return;
-        }
-
-        // Validate user role early
+    private static validateContestSubmission = async (user: Express.Request["user"], submissionData: TSubmission) => {
+        // Validate user role for contest submissions
         if (user?.role !== "STUDENT") {
             throw new ApiError("Only students are allowed to submit during contest.", HTTP_STATUS.UNAUTHORIZED);
         }
 
-        // Run validations concurrently where possible
+        // Run contest-specific validations concurrently
         const [contestProblem, isLive, isParticipant] = await Promise.all([
-            ContestRepository.getProblemFromTheContest(submissionData.problemId, submissionData.contestId),
-            this.isLiveContest(submissionData.contestId, submissionData.submissionTime),
-            this.isParticipant(user?.id, submissionData.contestId)
+            ContestRepository.getProblemFromTheContest(submissionData.problemId, submissionData.contestId!),
+            this.isLiveContest(submissionData.contestId!, submissionData.submissionTime),
+            this.isParticipant(user?.id!, submissionData.contestId!)
         ]);
 
         if (!contestProblem) {
@@ -87,43 +77,92 @@ export class SubmissionService {
             throw new ApiError("Unauthorized access, you are not allowed to submit the problem in this contest.", HTTP_STATUS.UNAUTHORIZED);
         }
 
-        // Handle testcases and driver codes concurrently
-        const [testcases, driverCodes] = await Promise.all([
-            this.getOrFetchTestcases(submissionData.problemId),
-            ProblemRepository.getDriverCode(submissionData.problemId, submissionData.languageId)
-        ]);
+        return contestProblem;
+    }
 
+    private static validateNonContestSubmission = async (user: Express.Request["user"], submissionData: TSubmission) => {
+        // For non-contest submissions, we might want to check if the problem exists
+        // and if the user has access to it (this depends on your business logic)
+        
+        // Basic validation - you can extend this based on your requirements
+        const problem = await ProblemRepository.getProblemById(submissionData.problemId);
+        if (!problem) {
+            throw new ApiError("Problem not found.", HTTP_STATUS.BAD_REQUEST);
+        }
+
+        return problem;
+    }
+
+    private static prepareSubmissionCode = async (submissionData: TSubmission): Promise<string> => {
+        const driverCodes = await ProblemRepository.getDriverCode(submissionData.problemId, submissionData.languageId);
+        
         if (!driverCodes?.prelude || !driverCodes?.driverCode) {
             throw new ApiError("No driver code found for given problem");
         }
-        driverCodes.prelude = convertToNormalString(driverCodes.prelude);
-        driverCodes.driverCode = convertToNormalString(driverCodes.driverCode);
-        driverCodes.boilerplate = convertToNormalString(driverCodes.boilerplate);
 
-        // Concatenate code
-        submissionData.code = `${driverCodes.prelude}\n\n${submissionData.code}\n\n${driverCodes.driverCode}`;
+        const prelude = convertToNormalString(driverCodes.prelude);
+        const driverCode = convertToNormalString(driverCodes.driverCode);
+        const boilerplate = convertToNormalString(driverCodes.boilerplate);
+
+        return `${prelude}\n\n${submissionData.code}\n\n${driverCode}`;
+    }
+
+    static createSubmission = async (user: Express.Request["user"], submissionData: TSubmission) => {
+        // Early validation
+        if (!user?.id) {
+            throw new ApiError("No id associated with user found", HTTP_STATUS.UNAUTHORIZED);
+        }
+
+        if (user.role !== "STUDENT") {
+            throw new ApiError("Only student is allowed to make the submission.");
+        }
+
+        const isContestSubmission = !!submissionData.contestId;
+        let problemPoint = 1; // Default point value for non-contest submissions
+
+        // Handle contest vs non-contest validation
+        if (isContestSubmission) {
+            await this.validateContestSubmission(user, submissionData);
+            
+            // Get contest-specific data
+            const problemContest = await ContestRepository.getProblemContest(
+                submissionData.problemId, 
+                submissionData.contestId!
+            );
+            problemPoint = problemContest?.point ?? 1;
+        } else {
+            await this.validateNonContestSubmission(user, submissionData);
+        }
+
+        // Handle common data preparation concurrently
+        const [testcases, preparedCode] = await Promise.all([
+            this.getOrFetchTestcases(submissionData.problemId),
+            this.prepareSubmissionCode(submissionData)
+        ]);
+
         const submissionId = uuidv4();
-  
-        const problemContest = await ContestRepository.getProblemContest(submissionData.problemId, submissionData.contestId);
+        
         const data: SubmissionQueueType = {
             studentId: user?.id,
             submissionId,
             languageCode: submissionData.languageCode,
             languageId: submissionData.languageId,
             problemId: submissionData.problemId,
-            contestId: submissionData.contestId,
-            problemPoint: problemContest?.point ?? 1,
-            code: submissionData.code,
+            contestId: submissionData.contestId || undefined, // undefined for non-contest submissions
+            problemPoint,
+            code: preparedCode,
             testcases: JSON.parse(testcases),
             submittedAt: submissionData.submissionTime
         };
 
         submissionQueue.add("submission-execute", data);
+        
         try {
             await RedisClient.getInstance().setForRun(submissionId, JSON.stringify({ status: "Queued" }));
         } catch (error) {
-            logger.warn("Setting the queue in redis failed")
+            logger.warn("Setting the queue in redis failed");
         }
+        
         return submissionId;
     }
 
@@ -142,6 +181,7 @@ export class SubmissionService {
         }
         return data;
     }
+
     private static getOrFetchTestcases = async (problemId: string): Promise<string> => {
         // Try to get from Redis first
         let testcases = await RedisClient.getInstance().getResult(problemId);

@@ -49,38 +49,29 @@ function roundToTwoDecimals(value: number): number {
 }
 
 function calculateAverageResources(results: CodeRunnerResult["results"]): {
-    avgExecutionTime: number;
-    avgMemoryUsed: number;
+    maxExecutionTime: number;
+    maxMemoryUsed: number;
 } {
     if (results.length === 0) {
-        return { avgExecutionTime: 0, avgMemoryUsed: 0 };
+        return { maxExecutionTime: 0, maxMemoryUsed: 0 };
     }
 
-    let totalExecutionTime = 0;
-    let totalMemoryUsed = 0;
-    let validExecutionTimeCount = 0;
-    let validMemoryCount = 0;
+    let maxExecutionTime = Number.MIN_SAFE_INTEGER;
+    let maxMemoryUsed = Number.MIN_SAFE_INTEGER;
+
 
     for (const result of results) {
-        if (result.executionTime != null && !isNaN(result.executionTime)) {
-            totalExecutionTime += Number(result.executionTime);
-            validExecutionTimeCount++;
+        if (result.executionTime) {
+            maxExecutionTime = Math.max(maxExecutionTime, Number(result.executionTime));
         }
         if (result.memory != null && !isNaN(result.memory)) {
-            totalMemoryUsed += result.memory;
-            validMemoryCount++;
+            maxMemoryUsed = Math.max(maxMemoryUsed, Number(result.memory));
         }
     }
 
-    const avgExecutionTime = validExecutionTimeCount > 0 
-        ? roundToTwoDecimals(totalExecutionTime / validExecutionTimeCount) 
-        : 0;
-    
-    const avgMemoryUsed = validMemoryCount > 0 
-        ? roundToTwoDecimals(totalMemoryUsed / validMemoryCount) 
-        : 0;
+   
 
-    return { avgExecutionTime, avgMemoryUsed };
+    return { maxExecutionTime, maxMemoryUsed };
 }
 
 function determineSubmissionStatus(passedTestCases: number, totalTestCases: number): string {
@@ -112,7 +103,7 @@ const dbWorker = new Worker<SubmissionRunnerResult>(
 
             // Calculate average resources
             logger.info("Calculating average resources used...");
-            const { avgExecutionTime, avgMemoryUsed } = calculateAverageResources(runnerResult.results);
+            const { maxExecutionTime, maxMemoryUsed } = calculateAverageResources(runnerResult.results);
 
             // Get problem scores with retry logic
             logger.info(`Fetching problem scores for problemId: ${metadata.problemId}`);
@@ -144,8 +135,8 @@ const dbWorker = new Worker<SubmissionRunnerResult>(
                 code: Buffer.from(metadata.code).toString("base64"),
                 score: totalScore,
                 status,
-                memoryUsed: avgMemoryUsed,
-                executionTime: avgExecutionTime
+                memoryUsed: maxMemoryUsed,
+                executionTime: maxExecutionTime
             };
 
             // Create submission with retry logic
