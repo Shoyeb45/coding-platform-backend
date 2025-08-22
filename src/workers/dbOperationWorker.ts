@@ -63,7 +63,7 @@ function calculateAverageResources(results: CodeRunnerResult["results"]): {
 
     for (const result of results) {
         if (result.executionTime != null && !isNaN(result.executionTime)) {
-            totalExecutionTime += result.executionTime;
+            totalExecutionTime += Number(result.executionTime);
             validExecutionTimeCount++;
         }
         if (result.memory != null && !isNaN(result.memory)) {

@@ -50,4 +50,29 @@ router.route("/")
  */
 router.route("/active/:submissionId")
     .get(asyncHandler(SubmissionController.getActiveSubmission));
+
+
+/**
+ * GET /history/:problemId
+ * @description API endpoint to get submissions of particular problem
+ * @param problemId id of the problem
+ * @returns
+"data": {
+    "submissions": [
+        {
+            "id": string,
+            "status": "Partially Accepted" | "Accepted",
+            "language": { 
+                "id": "cmek5u1j80003n5ds1sz09qbz",
+                "name": "C++"
+            },
+            "executionTime": null,
+            "submittedAt": "2025-08-20T21:20:28.038Z",
+            "code": string
+        }
+    ]
+},
+ */
+router.route("/history/:problemId")
+    .get(authenticateUser, asyncHandler(SubmissionController.getSubmissionHistory));
 export default router;

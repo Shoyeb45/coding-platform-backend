@@ -18,4 +18,13 @@ export class SubmissionController {
             new ApiResponse("Successfully fetched active submission.", data)
         );
     }
+
+
+    static getSubmissionHistory = async (req: Request, res: Response) => {
+        const problemId = req.params.problemId;
+        const data = await SubmissionService.getSubmissionHistory(req.user, problemId);
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully fetched all submission history", { submissions: data })
+        );
+    }
 }

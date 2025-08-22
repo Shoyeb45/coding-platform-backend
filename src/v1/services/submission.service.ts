@@ -8,6 +8,7 @@ import { S3Service } from "../../utils/s3client";
 import { ContestRepository } from "../repositories/contest.repository";
 import { ProblemRepository } from "../repositories/problem.repository";
 import { StudentRepository } from "../repositories/student.repository";
+import { SubmissionRepository } from "../repositories/submission.repository";
 import { TestcaseRepository } from "../repositories/testcase.repository";
 import { Judge0ExecutionResult } from "../types/judge0.type";
 import { RedisSubmission } from "../types/queue.type";
@@ -193,5 +194,27 @@ export class SubmissionService {
         return data;
     }
 
+    static getSubmissionHistory = async (user: Express.Request["user"], problemId: string) => {
+        if (user?.role && user.role !== "STUDENT") {
+            throw new ApiError("Only student is allowed to see their submission.", HTTP_STATUS.UNAUTHORIZED);
+        }
+        if (!user?.id) {
+            throw new ApiError("No user id found", HTTP_STATUS.BAD_REQUEST);
+        }
 
+        if (!problemId) {
+            throw new ApiError("No problem id found", HTTP_STATUS.BAD_REQUEST);
+        }
+
+        const submissions = await SubmissionRepository.getSubmissionHistory(problemId, user.id);
+
+        if (!submissions) {
+            throw new ApiError("No submissions found.");
+        }
+        
+        return  submissions.map((submission) => ({ 
+            ...submission, 
+            code: convertToNormalString(submission.code) 
+        }));
+    }
 }

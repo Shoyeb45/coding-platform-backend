@@ -22,4 +22,21 @@ export class SubmissionRepository {
             data: data 
         });
     }
+
+    static getSubmissionHistory = async (problemId: string, studentId: string) => {
+        const data = await prisma.submission.findMany({
+            where: {
+                problemId, studentId
+            }, 
+            select: {
+                id: true,
+                status: true, language: {
+                    select: {
+                        id: true, name: true
+                    }
+                }, executionTime: true, submittedAt: true, code: true
+            }
+        });
+        return data;
+    }
 }
