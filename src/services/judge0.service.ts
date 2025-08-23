@@ -2,6 +2,7 @@ import axios, { AxiosError } from 'axios';
 import { logger } from '../utils/logger';
 import { config } from "./../config/index";
 import { Judge0ExecutionRequest, Judge0ExecutionResult } from '../v1/types/judge0.type';
+import { convertToBase64 } from '../utils/helper';
 
 
 function getCpuTimeLimit(languageId: string) {
@@ -20,6 +21,7 @@ export async function executeCodeWithJudge0(request: Judge0ExecutionRequest): Pr
     const submissionData = {
       source_code: Buffer.from(request.code).toString('base64'),
       language_id: request.languageId,
+      expected_output: convertToBase64(request.expectedOutput),
       stdin: Buffer.from(request.input || '').toString('base64'),
       cpu_time_limit: getCpuTimeLimit(request.languageId),
       wall_time_limit: getCpuTimeLimit(request.languageId) * 3
@@ -54,12 +56,15 @@ export async function executeCodeWithJudge0(request: Judge0ExecutionRequest): Pr
   }
 }
 
-export async function batchSubmissionWithJudge0(languageId: string, code: string, inputs: string[]): Promise<Judge0ExecutionResult[]> {
+export async function batchSubmissionWithJudge0(languageId: string, code: string, testcases: {
+  input: string, output: string
+}[]): Promise<Judge0ExecutionResult[]> {
   try {
-    const submissions = inputs.map((input) => ({
+    const submissions = testcases.map((testcase) => ({
       language_id: languageId,
       source_code: Buffer.from(code).toString('base64'),
-      stdin: Buffer.from(input).toString('base64'),
+      stdin: Buffer.from(testcase.input).toString('base64'),
+      expected_output: convertToBase64(testcase.output),
       cpu_time_limit: getCpuTimeLimit(languageId),
       wall_time_limit: getCpuTimeLimit(languageId) * 3
     }));
@@ -84,7 +89,7 @@ export async function batchSubmissionWithJudge0(languageId: string, code: string
     logger.info(`Submitted batch of ${tokens.length} submissions`);
 
     // Step 2: Poll for results with adaptive timing
-    const results = await pollBatchResults(tokens, inputs.length);
+    const results = await pollBatchResults(tokens, testcases.length);
 
     return results.map((submission: any) => ({
       status: submission.status.description,

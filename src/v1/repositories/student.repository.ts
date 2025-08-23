@@ -103,10 +103,11 @@ export class StudentRepository {
                 questionsSolved: number;
                 finalScore: number;
                 rank: number;
+                isPublished: boolean;
             }[]
         >`
     WITH past_contests AS (
-      SELECT c."id", c."title", c."description", c."start_time", c."end_time"
+      SELECT c."id", c."title", c."description", c."start_time", c."end_time", c."is_published"
       FROM "contest" c
       WHERE c."end_time" < NOW()
     ),
@@ -155,6 +156,7 @@ export class StudentRepository {
         pc."description",
         pc."start_time" AS start_date,
         pc."end_time" AS end_date,
+        pc."is_published",
         cms.max_score AS maximum_possible_score,
         cms.total_questions,
         COALESCE(scs.final_score, 0) AS final_score,
@@ -175,7 +177,8 @@ export class StudentRepository {
       total_questions AS "totalQuestions",
       questions_solved AS "questionsSolved",
       final_score AS "finalScore",
-      rank::int
+      rank::int,
+      is_published AS "isPublished"
     FROM student_past_contests
     ORDER BY end_date DESC;
   `;

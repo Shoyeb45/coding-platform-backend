@@ -21,7 +21,7 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
             await RedisClient.getInstance().setForRun(job.data.submissionId, JSON.stringify({ status: "Running" }));
 
             // Split inputs into batches
-            const inputs = job.data.testcases.map((testcase) => { return testcase.input; });
+            const inputs = job.data.testcases.map((testcase) => { return { input: testcase.input, output: testcase.output}; });
             const totalTestCases = job.data.testcases.length;
             let passedCount = 0;
 
@@ -51,16 +51,7 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
 
                         const passed = result.status === 'Accepted' && result.output.trim() === expectedOutput.trim();
 
-                        if (passed) passedCount++;
-
-                        let status = passed ? "Accepted": "Wrong Answer";
-                        
-                        if (result.compileError) {
-                            status = "Compilation Error";
-                        } else if (result.error) {
-                            status = "Runtime Error";
-                        }
-
+                      
                         allResults.push({
                             status: result.status,
                             weight: job.data.testcases[testCaseIndex].weight ?? 1,
