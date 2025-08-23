@@ -256,14 +256,14 @@ router.route("/:contestId")
             "point": 4,
             "isSolved": false
         }  <-- For "STUDENT"
-
+        --------------
         {
             "title": string;
             "id": string;
             "difficulty": $Enums.Difficulty;
             "problemWeight": number;
             "testcaseWeight": number;
-        };
+        };      <-- For Teacher
     ]
 },
  */

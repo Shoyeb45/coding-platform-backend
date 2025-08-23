@@ -10,172 +10,302 @@ import { cleanObject, convertToBase64, convertToNormalString } from "../../utils
 import { TestcaseRepository } from "../repositories/testcase.repository";
 import { S3Service } from "../../utils/s3client";
 
+interface AuthResult {
+    isCreator: boolean;
+    isModerator: boolean;
+    hasAccess: boolean;
+}
+
 export class ProblemService {
-    static createProblem = async (problemData: TProblemCreate, res: Response) => {
-        {
-            const existingProblem = await ProblemRepository.getProblemByTitle(problemData.title);
-            if (existingProblem) {
-                throw new ApiError("Problem name already exists, please choose another name.", 500);
+    private static readonly s3Service = S3Service.getInstance();
+    
+    // Cache for authorization results
+    private static authCache = new Map<string, { result: AuthResult; timestamp: number }>();
+    private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+    /**
+     * Validates teacher role authorization
+     */
+    private static validateTeacherRole(user: Express.Request["user"] | string): string {
+        let userId: string;
+        let role: string;
+
+        if (typeof user === 'string') {
+            userId = user;
+            role = 'TEACHER'; // Assume teacher for string IDs (backward compatibility)
+        } else {
+            if (!user?.role || !["ASSISTANT_TEACHER", "TEACHER"].includes(user.role)) {
+                throw new ApiError("Only teachers are allowed to perform this action", HTTP_STATUS.UNAUTHORIZED);
+            }
+            if (!user?.id) {
+                throw new ApiError("Teacher ID not found", HTTP_STATUS.UNAUTHORIZED);
+            }
+            userId = user.id;
+            role = user.role;
+        }
+
+        return userId;
+    }
+
+    /**
+     * Validates required parameters
+     */
+    private static validateRequired(value: unknown, fieldName: string, statusCode = HTTP_STATUS.BAD_REQUEST): void {
+        if (!value || (typeof value === 'string' && !value.trim())) {
+            throw new ApiError(`${fieldName} is required`, statusCode);
+        }
+    }
+
+    /**
+     * Checks if problem exists and returns it
+     */
+    private static async validateProblemExists(problemId: string) {
+        const problem = await ProblemRepository.getProblemById(problemId);
+        if (!problem) {
+            throw new ApiError("No problem found with given id", HTTP_STATUS.NOT_FOUND);
+        }
+        return problem;
+    }
+
+    /**
+     * Optimized authorization check with caching
+     */
+    private static async checkProblemAuthorization(userId: string, problemId: string): Promise<AuthResult> {
+        const cacheKey = `${userId}-${problemId}`;
+        const cached = this.authCache.get(cacheKey);
+        
+        if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+            return cached.result;
+        }
+
+        const [problem, moderators] = await Promise.all([
+            ProblemRepository.getProblemById(problemId),
+            ProblemRepository.getModerators(problemId)
+        ]);
+
+        if (!problem) {
+            throw new ApiError("Problem not found", HTTP_STATUS.NOT_FOUND);
+        }
+
+        const isCreator = problem.creator?.id === userId;
+        const isModerator = moderators.some(mod => mod.moderator.id === userId);
+        const hasAccess = isCreator || isModerator;
+
+        const result: AuthResult = { isCreator, isModerator, hasAccess };
+        this.authCache.set(cacheKey, { result, timestamp: Date.now() });
+        
+        return result;
+    }
+
+    /**
+     * Validates problem access and throws error if unauthorized
+     */
+    private static async validateProblemAccess(userId: string, problemId: string): Promise<void> {
+        const auth = await this.checkProblemAuthorization(userId, problemId);
+        if (!auth.hasAccess) {
+            throw new ApiError("Unauthorized access, you don't have access to this problem", HTTP_STATUS.UNAUTHORIZED);
+        }
+    }
+
+    /**
+     * Validates creator access specifically
+     */
+    private static async validateCreatorAccess(userId: string, problemId: string): Promise<void> {
+        const auth = await this.checkProblemAuthorization(userId, problemId);
+        if (!auth.isCreator) {
+            throw new ApiError("Unauthorized access, only problem creator can perform this action", HTTP_STATUS.UNAUTHORIZED);
+        }
+    }
+
+    /**
+     * Sets response locals consistently
+     */
+    private static setResponseSuccess(res: Response, data: any, statusCode: number, message: string): void {
+        res.locals.data = data;
+        res.locals.success = true;
+        res.locals.statusCode = statusCode;
+        res.locals.message = message;
+    }
+
+    /**
+     * Processes testcase data in batches for better performance
+     */
+    private static async processTestcases(testcases: any[], batchSize = 5) {
+        const results = [];
+        
+        for (let i = 0; i < testcases.length; i += batchSize) {
+            const batch = testcases.slice(i, i + batchSize);
+            const batchResults = await Promise.all(
+                batch.map(async (testcase) => ({
+                    ...testcase,
+                    input: await this.s3Service.getFileContent(testcase.input),
+                    output: await this.s3Service.getFileContent(testcase.output),
+                }))
+            );
+            results.push(...batchResults);
+        }
+        
+        return results;
+    }
+
+    /**
+     * Converts driver code data for storage/retrieval
+     */
+    private static convertDriverCodeData(data: any, toBase64 = false): any {
+        const converter = toBase64 ? convertToBase64 : convertToNormalString;
+        
+        return {
+            ...data,
+            ...(data.prelude && { prelude: converter(data.prelude) }),
+            ...(data.boilerplate && { boilerplate: converter(data.boilerplate) }),
+            ...(data.driverCode && { driverCode: converter(data.driverCode) }),
+        };
+    }
+
+    /**
+     * Clears authorization cache for a problem
+     */
+    private static clearAuthCache(problemId: string): void {
+        for (const [key] of this.authCache) {
+            if (key.endsWith(`-${problemId}`)) {
+                this.authCache.delete(key);
             }
         }
-        const createdProblem = await ProblemRepository.create(problemData);
+    }
 
+    static createProblem = async (problemData: TProblemCreate, res: Response) => {
+        this.validateRequired(problemData.title, "Problem title");
+
+        const existingProblem = await ProblemRepository.getProblemByTitle(problemData.title);
+        if (existingProblem) {
+            throw new ApiError("Problem name already exists, please choose another name.", HTTP_STATUS.CONFLICT);
+        }
+
+        const createdProblem = await ProblemRepository.create(problemData);
         if (!createdProblem) {
             logger.error("Failed to create new problem");
-            throw new ApiError("Failed to create new problem", 500);
+            throw new ApiError("Failed to create new problem", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-        logger.info("Problem created successfully")
 
-        res.locals.data = createdProblem;
-        res.locals.success = true;
-        res.locals.statusCode = 201;
-        res.locals.message = "Problem created successfully."
-        return;
+        logger.info("Problem created successfully");
+        this.setResponseSuccess(res, createdProblem, 201, "Problem created successfully.");
     }
 
     static updateProblem = async (teacherId: string | undefined, id: string, data: TProblem, res: Response) => {
-        {
-            const existingProblem = await ProblemRepository.getProblemById(id);
-            if (!existingProblem) {
-                throw new ApiError("No problem found with given id", 404);
-            }
-            if (existingProblem.creator && existingProblem.creator.id !== teacherId) {
-                throw new ApiError("User is not authorized to edit the problem, problem owner mismatch.", HTTP_STATUS.UNAUTHORIZED);
-            }
+        const validatedTeacherId = this.validateTeacherRole(teacherId || '');
+        this.validateRequired(id, "Problem ID");
 
+        const existingProblem = await this.validateProblemExists(id);
+        
+        if (existingProblem.creator && existingProblem.creator.id !== validatedTeacherId) {
+            throw new ApiError("User is not authorized to edit the problem, problem owner mismatch.", HTTP_STATUS.UNAUTHORIZED);
         }
+
         const { tags, ...problemData } = cleanObject(data);
 
-        const updatedProblem = await ProblemRepository.updateProblem(id, problemData);
-        if (tags) {
-            await ProblemRepository.addTags(id, tags);
-        }
-        res.locals.data = { updatedProblem };
-        res.locals.success = true;
-        res.locals.statusCode = 200;
-        res.locals.message = "Problem updated successfully."
+        const [updatedProblem] = await Promise.all([
+            ProblemRepository.updateProblem(id, problemData),
+            tags ? ProblemRepository.addTags(id, tags) : Promise.resolve(null)
+        ]);
+
+        this.setResponseSuccess(res, { updatedProblem }, 200, "Problem updated successfully.");
     }
 
     static getTagsOfProblem = async (id: string, res: Response) => {
-        {
-            const existingProblem = await ProblemRepository.getProblemById(id);
-            if (!existingProblem) {
-                throw new ApiError("No problem found with given id", 404);
-            }
-        }
-
+        this.validateRequired(id, "Problem ID");
+        
+        await this.validateProblemExists(id);
+        
         const tags = await ProblemRepository.getTags(id);
         const filteredTags = tags.map(tag => ({ ...tag.tag }));
-        res.locals.data = { tags: filteredTags };
-        res.locals.success = true;
-        res.locals.statusCode = 200;
-        res.locals.message = "Successfully found tags of the problem."
-        return;
+        
+        this.setResponseSuccess(res, { tags: filteredTags }, 200, "Successfully found tags of the problem.");
     }
+
     static getProblemById = async (teacherId: string | undefined, id: string, res: Response) => {
-        const problem = await ProblemRepository.getProblemById(id);
+        this.validateRequired(id, "Problem ID");
 
-        if (!problem) {
-            throw new ApiError("No problem found with given id", 404);
-        }
-
-
-        res.locals.data = { problem };
-        res.locals.success = true;
-        res.locals.statusCode = 200;
-        res.locals.message = "Successfully found problem with given id."
-        return;
+        const problem = await this.validateProblemExists(id);
+        
+        this.setResponseSuccess(res, { problem }, 200, "Successfully found problem with given id.");
     }
-
 
     static getProblemDetails = async (problemId: string) => {
-        if (!problemId) {
-            throw new ApiError("No problem id found", HTTP_STATUS.BAD_REQUEST);
-        }
+        this.validateRequired(problemId, "Problem ID");
 
-        const problemDetail = await ProblemRepository.getProblemDetails(problemId);
+        const [problemDetail, testcases] = await Promise.all([
+            ProblemRepository.getProblemDetails(problemId),
+            TestcaseRepository.getTestcases({ problemId, isSample: true })
+        ]);
 
         if (!problemDetail) {
-            throw new ApiError("No problem found with given id");
+            throw new ApiError("No problem found with given id", HTTP_STATUS.NOT_FOUND);
         }
-        problemDetail.problemLanguage = problemDetail.problemLanguage.map((pl) => ({...pl, boilerplate: convertToNormalString(pl.boilerplate)}));
-        
-        let testcases = await TestcaseRepository.getTestcases({ problemId, isSample: true });
 
         if (!testcases) {
-            throw new ApiError("Failed to fetch sample testcases from database.");
+            throw new ApiError("Failed to fetch sample testcases from database", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
 
-        const data = await Promise.all(
-            testcases.map(async (testcase) => ({
-                ...testcase,
-                input: await S3Service.getInstance().getFileContent(testcase.input),
-                output: await S3Service.getInstance().getFileContent(testcase.output),
-            }))
-        );
+        // Process boilerplate code
+        problemDetail.problemLanguage = problemDetail.problemLanguage.map(pl => ({
+            ...pl, 
+            boilerplate: convertToNormalString(pl.boilerplate)
+        }));
+
+        // Process testcases in batches
+        const processedTestcases = await this.processTestcases(testcases);
 
         return {
             problemDetail: {
                 ...problemDetail, 
-                problemTags: problemDetail.problemTags.map((pt) => ({ ...pt.tag }))
+                problemTags: problemDetail.problemTags.map(pt => ({ ...pt.tag }))
             },
-            sampleTestcases: data
+            sampleTestcases: processedTestcases
         };
     }
+
     static getAllProblems = async (teacherId: string | undefined, parsedData: ZodSafeParseResult<TProblemFilter>, res: Response) => {
-        if (!teacherId) {
-            throw new ApiError("Teacher id not found", HTTP_STATUS.UNAUTHORIZED);
-        }
-        
+        const validatedTeacherId = this.validateTeacherRole(teacherId || '');
 
         if (!parsedData.success) {
-            logger.error(parsedData.error)
-            throw new ApiError("Failed to parse query string", 500);
+            logger.error(parsedData.error);
+            throw new ApiError("Failed to parse query string", HTTP_STATUS.BAD_REQUEST);
         }
 
-        const problems = await ProblemRepository.getAllProblems(parsedData.data);
-        const updated = problems.map(problem => ({ isOwner: problem?.creator?.id === teacherId, ...problem }));
-        res.locals.data = { problems: updated };
-        res.locals.success = true;
-        res.locals.statusCode = 200;
-        res.locals.message = "Successfully fetched all the problems."
+        const problems = await ProblemRepository.getAllProblems(parsedData.data, validatedTeacherId);
+        const updated = problems.map(problem => ({ 
+            isOwner: problem?.creator?.id === validatedTeacherId, 
+            ...problem 
+        }));
+        
+        this.setResponseSuccess(res, { problems: updated }, 200, "Successfully fetched all the problems.");
     }
 
     static getProblemsOfCreator = async (creatorId: string | undefined, res: Response) => {
+        const validatedCreatorId = this.validateTeacherRole(creatorId || '');
 
-        if (!creatorId) {
-            throw new ApiError("Can't find creator id", 500);
-        }
-        const problems = await ProblemRepository.getProblemsOfCreator(creatorId);
-        res.locals.data = { problems };
-        res.locals.success = true;
-        res.locals.statusCode = 200;
-        res.locals.message = "Successfully fetched all the problems for creator."
-
-        return;
+        const problems = await ProblemRepository.getProblemsOfCreator(validatedCreatorId);
+        
+        this.setResponseSuccess(res, { problems }, 200, "Successfully fetched all the problems for creator.");
     }
 
     static removeProblem = async (teacherId: string | undefined, id: string, res: Response) => {
-        if (!teacherId) {
-            throw new ApiError("Teacher id not found", HTTP_STATUS.UNAUTHORIZED);
+        const validatedTeacherId = this.validateTeacherRole(teacherId || '');
+        this.validateRequired(id, "Problem ID");
+
+        const existingProblem = await this.validateProblemExists(id);
+        
+        if (existingProblem.creator?.id !== validatedTeacherId) {
+            throw new ApiError("Unauthorized access, you don't have access to delete the problem.", HTTP_STATUS.UNAUTHORIZED);
         }
 
-        if (!id) {
-            throw new ApiError("Couldn't find id of the problem to be removed.", 500);
-        }
-        {
-            const existingProblem = await ProblemRepository.getProblemById(id);
-            if (!existingProblem) {
-                throw new ApiError("No problem found with given id");
-            }
-            if (existingProblem.creator?.id !== teacherId) {
-                throw new ApiError("Unauthorized access, you don't have access to delete the problem.", HTTP_STATUS.UNAUTHORIZED);
-            }
-        }
         const problem = await ProblemRepository.softRemove(id);
         if (!problem) {
-            throw new ApiError("Failed to remove the problem", 500);
+            throw new ApiError("Failed to remove the problem", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
+
+        // Clear cache since problem is deleted
+        this.clearAuthCache(id);
 
         res.status(201).json(
             new ApiResponse(`Problem with id ${id} removed successfully`, { problem })
@@ -183,197 +313,154 @@ export class ProblemService {
     }
 
     static deleteModeratorFromProblem = async (user: Express.Request["user"], id: string) => {
-        if (user?.role !== "TEACHER" && user?.role !== "ASSISTANT_TEACHER") {
-            throw new ApiError("Only teacher can remove the moderator.");
+        const userId = this.validateTeacherRole(user);
+        this.validateRequired(id, "Moderator ID");
+
+        const existing = await ProblemRepository.getModerator(id);
+        if (!existing) {
+            throw new ApiError("No moderator exists with given id", HTTP_STATUS.NOT_FOUND);
         }
-        {
-            const existing = await ProblemRepository.getModerator(id);
-            if (!existing) {
-                throw new ApiError("No moderator exist with given id.");
-            }
-            if (existing.problem.createdBy !== user?.id) {
-                throw new ApiError("Unauthorized access, you are not allowed to remove the moderator.");
-            }
+        
+        if (existing.problem.createdBy !== userId) {
+            throw new ApiError("Unauthorized access, you are not allowed to remove the moderator", HTTP_STATUS.UNAUTHORIZED);
         }
+
         const data = await ProblemRepository.deleteModerator(id);
         if (!data) {
-            throw new ApiError("Failed to remove the moderator.");
+            throw new ApiError("Failed to remove the moderator", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
 
         return data;
     }
-    private static authenticateModerator = async (teacherId: string, problemId: string) => {
-        const mods = await ProblemRepository.getModerators(problemId);
 
-        for (const mod of mods) {
-            if (mod.moderator.id === teacherId) {
-                return true;
-            }
-        }
-        return false;
+    private static authenticateModerator = async (teacherId: string, problemId: string): Promise<boolean> => {
+        const auth = await this.checkProblemAuthorization(teacherId, problemId);
+        return auth.isModerator;
     }
 
     static deleteDriverCodes = async (user: Express.Request["user"], problemId: string, id: string) => {
-        if (!problemId) {
-            throw new ApiError("No problem id found", HTTP_STATUS.BAD_REQUEST);
-        }
-        if (!user?.id) {
-            throw new ApiError("No teacher id found");
-        }
+        const userId = this.validateTeacherRole(user);
+        this.validateRequired(problemId, "Problem ID");
+        this.validateRequired(id, "Driver code ID");
 
-        if (user.role !== "TEACHER" && user.role !== "ASSISTANT_TEACHER") {
-            throw new ApiError("Unauthorized access, your are not allowed to perform changes.");
-        }
-        await this.checkProblem(problemId, user?.id);
-        await this.authenticateModerator(user?.id, problemId);
+        await this.validateProblemAccess(userId, problemId);
 
         const data = await ProblemRepository.deleteDriverCodes(id);
         if (!data) {
-            throw new ApiError("Failed to delete driver codes");
+            throw new ApiError("Failed to delete driver codes", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-        data.driverCode = convertToNormalString(data.driverCode);
-        data.prelude = convertToNormalString(data.prelude);
-        data.boilerplate = convertToNormalString(data.boilerplate);
-        return data;
+
+        return this.convertDriverCodeData(data, false);
     }
+
     static addModeratorsToProblem = async (teacherId: string | undefined, data: TProblemModerator, res: Response) => {
-        if (!teacherId) {
-            throw new ApiError("Teacher id not found.", HTTP_STATUS.UNAUTHORIZED);
+        const validatedTeacherId = this.validateTeacherRole(teacherId || '');
+        this.validateRequired(data.problemId, "Problem ID");
+
+        await this.validateCreatorAccess(validatedTeacherId, data.problemId);
+
+        if (data.moderatorIds.some(moderatorId => moderatorId === validatedTeacherId)) {
+            throw new ApiError("You can't add yourself as a moderator in the problem.", HTTP_STATUS.BAD_REQUEST);
         }
-        await this.checkProblem(data.problemId, teacherId);
+
         const moderator = await ProblemRepository.addModerators(data);
         if (!moderator) {
-            throw new ApiError("Failed to assign moderator to the problem", 500);
+            throw new ApiError("Failed to assign moderator to the problem", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
 
-        const moderators = await ProblemRepository.getModerators(data.problemId);
+        // Clear cache since moderators changed
+        this.clearAuthCache(data.problemId);
 
-        const mods = moderators.map(mod => ({ moderatorId: mod.id, ...mod.moderator }));
+        const moderators = await ProblemRepository.getModerators(data.problemId);
+        const mods = moderators.map(mod => ({ 
+            moderatorId: mod.id, 
+            ...mod.moderator 
+        }));
+
         res.status(201).json(
-            new ApiResponse(`Moderator added successfully.`, { moderators: mods })
+            new ApiResponse("Moderator added successfully.", { moderators: mods })
         );
     }
 
     static getModeratorsOfProblem = async (problemId: string, res: Response) => {
-        if (!problemId) {
-            throw new ApiError("No problem id provided for getting moderator", HTTP_STATUS.NOT_FOUND);
-        }
-        const rawData = await ProblemRepository.getModerators(problemId);
+        this.validateRequired(problemId, "Problem ID");
 
+        const rawData = await ProblemRepository.getModerators(problemId);
         if (!rawData) {
-            throw new ApiError("Failed to retireve moderators", 500);
+            throw new ApiError("Failed to retrieve moderators", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-        const moderators = rawData.map(mod => ({ moderatorId: mod.id, ...mod.moderator }));
+
+        const moderators = rawData.map(mod => ({ 
+            moderatorId: mod.id, 
+            ...mod.moderator 
+        }));
 
         res.status(HTTP_STATUS.OK).json(
             new ApiResponse("Successfully fetched all moderators.", { moderators })
-        )
+        );
     }
 
-    private static checkProblem = async (problemId: string, teacherId: string) => {
-        const existingProblem = await ProblemRepository.getProblemById(problemId);
-        if (!existingProblem) {
-            throw new ApiError("No problem found for given id.", HTTP_STATUS.BAD_REQUEST);
-        }
-
-        const isModeratorAllowed = await this.authenticateModerator(teacherId, problemId);
-        if (existingProblem.creator && (existingProblem.creator.id.trim() !== teacherId.trim() && !isModeratorAllowed)) {
-            throw new ApiError("Unauthorized access, only creator or moderator is allowed to add driver codes", HTTP_STATUS.UNAUTHORIZED);
-        }
+    private static checkProblem = async (problemId: string, teacherId: string): Promise<void> => {
+        await this.validateProblemAccess(teacherId, problemId);
     }
 
     static addDriverCode = async (teacherId: string | undefined, problemId: string, driverCodeData: TProblemDriver) => {
-        if (!teacherId) {
-            throw new ApiError("Teacher id not found.", HTTP_STATUS.UNAUTHORIZED);
-        }
+        const validatedTeacherId = this.validateTeacherRole(teacherId || '');
+        this.validateRequired(problemId, "Problem ID");
 
-        if (!problemId) {
-            throw new ApiError("Could not found problem Id", HTTP_STATUS.BAD_REQUEST);
-        }
-        await this.checkProblem(problemId, teacherId);
-        const data = await ProblemRepository.addDriverCode(problemId, {
-            ...driverCodeData,
-            prelude: convertToBase64(driverCodeData.prelude),
-            driverCode: convertToBase64(driverCodeData.driverCode),
-            boilerplate: convertToBase64(driverCodeData.boilerplate)
-        });
+        await this.checkProblem(problemId, validatedTeacherId);
+
+        const convertedData = this.convertDriverCodeData(driverCodeData, true);
+        const data = await ProblemRepository.addDriverCode(problemId, convertedData);
 
         if (!data) {
-            throw new ApiError("Failed to create new problem");
+            throw new ApiError("Failed to create new problem", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-        data.driverCode = convertToNormalString(data.driverCode);
-        data.prelude = convertToNormalString(data.prelude);
-        data.boilerplate = convertToNormalString(data.boilerplate);
-        return data;
+
+        return this.convertDriverCodeData(data, false);
     }
 
     static getDriverCodes = async (problemId: string, languageId: string) => {
-        if (!problemId) {
-            throw new ApiError("Could not found problem Id", HTTP_STATUS.BAD_REQUEST);
-        }
+        this.validateRequired(problemId, "Problem ID");
 
-        let driverData = { problemId };
-        // const data = await ProblemRepository.getDriverCodes(problemId, languageId);
-        let data: {
-            prelude: string;
-            boilerplate: string;
-            driverCode: string;
-            id: string;
-            language: {
-                name: string;
-                id: string;
-            };
-        }[];
-        if (languageId) {
-            data = await ProblemRepository.getDriverCodes({ languageId, problemId });
-        } else {
-            data = await ProblemRepository.getDriverCodes({ problemId });
-        }
+        const queryParams = languageId ? { languageId, problemId } : { problemId };
+        const data = await ProblemRepository.getDriverCodes(queryParams);
 
         if (!data) {
-            throw new ApiError("Failed to find driver codes for the given problem");
+            throw new ApiError("Failed to find driver codes for the given problem", HTTP_STATUS.NOT_FOUND);
         }
-        const newData = data.map((d) => ({
-            ...d,
-            prelude: convertToNormalString(d.prelude),
-            boilerplate: convertToNormalString(d.boilerplate),
-            driverCode: convertToNormalString(d.driverCode)
-        }));
 
-
-        return newData;
+        return data.map(d => this.convertDriverCodeData(d, false));
     }
 
     static updateDriverCode = async (teacherId: string | undefined, id: string, driverCodeData: TProblemDriverUpdate) => {
-        if (!teacherId) {
-            throw new ApiError("No teacher id found.");
-        }
-        if (!id) {
-            throw new ApiError("Could not found problem Id", HTTP_STATUS.BAD_REQUEST);
-        }
-        // await this.checkProblem(problemId, teacherId);
-        if (driverCodeData.boilerplate) {
-            driverCodeData.boilerplate = convertToBase64(driverCodeData.boilerplate);
-        }
-        if (driverCodeData.prelude) {
-            driverCodeData.prelude = convertToBase64(driverCodeData.prelude);
-        }
-        if (driverCodeData.driverCode) {
-            driverCodeData.driverCode = convertToBase64(driverCodeData.driverCode);
-        }
+        const validatedTeacherId = this.validateTeacherRole(teacherId || '');
+        this.validateRequired(id, "Driver code ID");
 
-        const data = await ProblemRepository.updateDriverCode(id, driverCodeData);
+        const convertedData = this.convertDriverCodeData(driverCodeData, true);
+        const data = await ProblemRepository.updateDriverCode(id, convertedData);
 
         if (!data) {
-            throw new ApiError("Failed to update driver codes for the given problem");
+            throw new ApiError("Failed to update driver codes for the given problem", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }
-        data.driverCode = convertToNormalString(data.driverCode);
-        data.prelude = convertToNormalString(data.prelude);
-        data.boilerplate = convertToNormalString(data.boilerplate);
 
-        return data;
+        return this.convertDriverCodeData(data, false);
     }
 
-
-
+    /**
+     * Cleanup method to clear expired cache entries
+     */
+    static cleanupCache(): void {
+        const now = Date.now();
+        for (const [key, value] of this.authCache) {
+            if (now - value.timestamp > this.CACHE_TTL) {
+                this.authCache.delete(key);
+            }
+        }
+    }
 }
+
+// Periodic cache cleanup
+setInterval(() => {
+    ProblemService.cleanupCache();
+}, 10 * 60 * 1000); // Every 10 minutes

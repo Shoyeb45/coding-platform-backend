@@ -19,6 +19,7 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
         try {
 
             await RedisClient.getInstance().setForRun(job.data.submissionId, JSON.stringify({ status: "Running" }));
+            const preparedCode = `${job.data.prelude}\n\n${job.data.userCode}\n\n${job.data.driverCode}`; 
 
             // Split inputs into batches
             const inputs = job.data.testcases.map((testcase) => { return { input: testcase.input, output: testcase.output}; });
@@ -34,7 +35,7 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
 
                 // Process current set of batches concurrently
                 const batchPromises = currentBatches.map(batch =>
-                    batchSubmissionWithJudge0(job.data.languageCode, job.data.code, batch)
+                    batchSubmissionWithJudge0(job.data.languageCode, preparedCode, batch)
                 );
 
                 const batchResults = await Promise.all(batchPromises);
@@ -97,7 +98,7 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
                 metadata: {
                     problemId: job.data.problemId,
                     languageId: job.data.languageId,
-                    code: job.data.code,
+                    code: job.data.userCode,
                     submittedAt: job.data.submittedAt,
                     studentId: job.data.studentId,
                     contestId: job.data.contestId

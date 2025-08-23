@@ -102,43 +102,58 @@ export class ProblemRepository {
         return { ...problemData, tags: problemTags.map(pt => pt.tag) };
     }
 
-    static getAllProblems = async (where: TProblemFilter) => {
+    static getAllProblems = async (where: TProblemFilter, userId: string) => {
         console.log(where);
 
         const rawProblems = await prisma.problem.findMany({
             select: {
-                id: true, title: true, difficulty: true, isPublic: true, creator: {
+                id: true,
+                title: true,
+                difficulty: true,
+                isPublic: true,
+                creator: {
                     select: {
                         id: true,
                         email: true,
-                        name: true
-                    }
+                        name: true,
+                    },
                 },
                 problemTags: {
                     select: {
                         tag: {
                             select: {
                                 name: true,
-                                id: true
-                            }
-                        }
-                    }
-                }
+                                id: true,
+                            },
+                        },
+                    },
+                },
+                problemModerators: {
+                    where: {
+                        moderatorId: userId,   // check if this user is a moderator
+                    },
+                    select: { id: true },    // we just need existence
+                },
             },
             where: {
-                isActive: true
-            }
-        })
-
+                isActive: true,
+            },
+        });
 
         const problems = rawProblems.map((problem) => {
-            const { problemTags, ...problemData } = problem;
-            const tags = problemTags.map(pt => pt.tag);
-            return { ...problemData, tags };
+            const { problemTags, problemModerators, ...problemData } = problem;
+            const tags = problemTags.map((pt) => pt.tag);
+
+            return {
+                ...problemData,
+                tags,
+                isModerator: problemModerators.length > 0, // true if user is moderator
+            };
         });
 
         return problems;
-    }
+    };
+
 
     static getProblemDetails = async (id: string) => {
         const data = await prisma.problem.findFirst({
@@ -164,7 +179,7 @@ export class ProblemRepository {
         });
 
         return data;
-    } 
+    }
 
     static updateProblem = async (id: string, data: TProblemUpdate) => {
         const updateProblem = await prisma.problem.update({
@@ -264,7 +279,7 @@ export class ProblemRepository {
     }
 
     static addModerators = async (data: TProblemModerator) => {
-        const moderatorData = data.moderatorIds.map((id) => ({problemId: data.problemId, moderatorId: id}));
+        const moderatorData = data.moderatorIds.map((id) => ({ problemId: data.problemId, moderatorId: id }));
 
         const problemModerator = await prisma.problemModerator.createMany({
             data: moderatorData,

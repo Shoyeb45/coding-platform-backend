@@ -261,37 +261,47 @@ export class ContestRepository {
         return rawData;
     }
 
-    static getContestsForUser = async (createdBy: string) => {
+    static getContestsForUser = async (userId: string) => {
         const rawData = await prisma.contest.findMany({
             where: {
-                createdBy,
+                OR: [
+                    { createdBy: userId },
+                    { contestModerators: { some: { moderatorId: userId } } }
+                ],
                 endTime: {
                     gt: new Date()
                 }
             },
             select: {
-                id: true, title: true, description: true, startTime: true, endTime: true, tags: {
+                id: true,
+                title: true,
+                description: true,
+                startTime: true,
+                endTime: true,
+                tags: {
                     select: {
-                        tag: {
-                            select: { id: true, name: true }
-                        }
+                        tag: { select: { id: true, name: true } }
                     }
-                }, allowedLanguages: {
+                },
+                allowedLanguages: {
                     select: {
-                        language: {
-                            select: { id: true, name: true }
-                        }
+                        language: { select: { id: true, name: true } }
                     }
                 }
             }
         });
-        return rawData;
-    }
 
-    static getPastContests = async (createdBy: string) => {
+        return rawData;
+    };
+
+
+    static getPastContests = async (userId: string) => {
         const rawData = await prisma.contest.findMany({
             where: {
-                createdBy,
+                OR: [
+                    { createdBy: userId },
+                    { contestModerators: { some: { moderatorId: userId } } }
+                ],
                 endTime: {
                     lt: new Date(),
                 },

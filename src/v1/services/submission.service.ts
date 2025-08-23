@@ -93,7 +93,9 @@ export class SubmissionService {
         return problem;
     }
 
-    private static prepareSubmissionCode = async (submissionData: TSubmission): Promise<string> => {
+    private static prepareSubmissionCode = async (submissionData: TSubmission): Promise<{
+        prelude: string, driverCode: string, userCode: string
+    }> => {
         const driverCodes = await ProblemRepository.getDriverCode(submissionData.problemId, submissionData.languageId);
         
         if (!driverCodes?.prelude || !driverCodes?.driverCode) {
@@ -104,7 +106,9 @@ export class SubmissionService {
         const driverCode = convertToNormalString(driverCodes.driverCode);
         const boilerplate = convertToNormalString(driverCodes.boilerplate);
 
-        return `${prelude}\n\n${submissionData.code}\n\n${driverCode}`;
+        return {
+            prelude, driverCode, userCode: submissionData.code
+        };
     }
 
     static createSubmission = async (user: Express.Request["user"], submissionData: TSubmission) => {
@@ -150,7 +154,7 @@ export class SubmissionService {
             problemId: submissionData.problemId,
             contestId: submissionData.contestId || undefined, // undefined for non-contest submissions
             problemPoint,
-            code: preparedCode,
+            ...preparedCode,
             testcases: JSON.parse(testcases),
             submittedAt: submissionData.submissionTime
         };
