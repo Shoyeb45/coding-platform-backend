@@ -51,6 +51,9 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
 
                         const passed = result.status === 'Accepted' && result.output.trim() === expectedOutput.trim();
 
+                        if (passed) {
+                            passedCount++;
+                        }
                       
                         allResults.push({
                             status: result.status,
