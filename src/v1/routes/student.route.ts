@@ -90,5 +90,23 @@ router.route("/problems")
 },
  */
 router.route("/contest/past")
-    .get(authenticateUser, asyncHandler(StudentController.getPastContests))
+    .get(authenticateUser, asyncHandler(StudentController.getPastContests));
+
+
+/**
+ * GET /contest-stats
+ * @description Get details of the current student, rank, totalExams, questionSolved
+ * @returns
+Example response:
+"data": {
+    "statistics": {
+        "currentRank": 2,
+        "totalExams": 1,
+        "totalQuestionsSolved": 1,
+        "totalScore": 130
+    }
+},
+ */
+router.route("/contest-stats")
+    .get(authenticateUser, asyncHandler(StudentController.getStudentStats));
 export default router;

@@ -24,4 +24,11 @@ export class StudentController {
             new ApiResponse("Successfully fetched public problems.", { problems })
         );
     }
+
+    static getStudentStats = async (req: Request, res: Response) => {
+        const statistics = await StudentService.getStudentStats(req.user);
+        res.status(HTTP_STATUS.OK).json(
+            new ApiResponse("Successfully fetched student statistics.", { statistics })
+        );
+    }
 }

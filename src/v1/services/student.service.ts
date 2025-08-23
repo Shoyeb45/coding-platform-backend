@@ -47,10 +47,10 @@ export class StudentService {
             ...problem,
             isSolved: problem.submissions.length > 0,
             problemTags: problem.problemTags.map((pt) => ({ ...pt.tag })),
-            submissions: undefined, 
+            submissions: undefined,
         })));
-        
-    
+
+
         return result.map((res) => (cleanObject(res)));
     }
 
@@ -67,13 +67,35 @@ export class StudentService {
         if (!contests) {
             throw new ApiError("Failed to find all the past contests.");
         }
-        return contests.map((contest) => ({ 
-            ...contest, 
+        return contests.map((contest) => ({
+            ...contest,
             maximumPossibleScore: Number(contest.maximumPossibleScore),
             totalQuestions: Number(contest.totalQuestions),
             questionsSolved: Number(contest.questionsSolved),
             finalScore: Number(contest.finalScore),
             rank: Number(contest.rank)
         }));
+    }
+
+    static getStudentStats = async (user: Express.Request["user"]) => {
+        if (!user?.id) {
+            throw new ApiError("No student id found.", HTTP_STATUS.BAD_REQUEST);
+        }
+        if (user.role !== "STUDENT") {
+            throw new ApiError("Unauthorized access, only student is allowed.", HTTP_STATUS.UNAUTHORIZED);
+        }
+
+        const data = await StudentRepository.getStudentStats(user.id);
+
+        if (!data) {
+            throw new ApiError("Failed to fetch student stats.");
+        }
+
+        return {
+            currentRank: Number(data.currentRank),
+            totalExams: Number(data.totalExams),
+            totalQuestionsSolved: Number(data.totalQuestionsSolved),
+            totalScore: Number(data.totalScore)
+        };
     }
 }

@@ -91,26 +91,24 @@ export class StudentRepository {
     }
 
     static getPastContests = async (studentId: string) => {
-        const result = await prisma.$queryRaw<
-            {
-                contest_id: string;
-                title: string;
-                description: string;
-                startDate: Date;
-                endDate: Date;
-                maximumPossibleScore: number;
-                totalQuestions: number;
-                questionsSolved: number;
-                finalScore: number;
-                rank: number;
-                isPublished: boolean;
-                subject: {
-                    id: string;
-                    name: string;
-                    code: string;
-                } | null; // Nullable because subjectId is optional in Contest
-            }[]
-        >`
+        const result = await prisma.$queryRaw<{
+            contestId: string;
+            title: string;
+            description: string;
+            startDate: Date;
+            endDate: Date;
+            maximumPossibleScore: number;
+            totalQuestions: number;
+            questionsSolved: number;
+            finalScore: number;
+            rank: number;
+            isPublished: boolean;
+            subject: {
+                id: string;
+                name: string;
+                code: string;
+            } | null; // Nullable because subjectId is optional in Contest
+        }[]>`
     WITH past_contests AS (
       SELECT 
         c."id", 
@@ -187,7 +185,7 @@ export class StudentRepository {
        AND cl."student_id" = ${studentId}
     )
     SELECT 
-      spc.contest_id AS "contest_id",
+      spc.contest_id AS "contestId",
       spc.title,
       spc.description,
       spc.start_date AS "startDate",
@@ -237,5 +235,84 @@ export class StudentRepository {
                 }, point: true
             }
         })
+    }
+
+
+    static getStudentStats = async (studentId: string) => {
+
+        const result = await prisma.$queryRaw<{
+            currentRank: string,
+            totalExams: string,
+            totalQuestionsSolved: string,
+            totalScore: string,
+        }[]>`
+WITH student_info AS (
+    -- Get the target student's batch
+    SELECT s.id as student_id, s.batch_id, s.name, s.email
+    FROM "Student" s
+    WHERE s.id = ${studentId}
+),
+batch_contests AS (
+    -- Get all contests assigned to the student's batch
+    SELECT DISTINCT bc.contest_id
+    FROM "batch_contest" bc
+    JOIN student_info si ON si.batch_id = bc.batch_id
+),
+batch_students AS (
+    -- Get all students in the same batch
+    SELECT s.id as student_id, s.name, s.email
+    FROM "Student" s
+    JOIN student_info si ON si.batch_id = s.batch_id
+),
+student_contest_scores AS (
+    -- Calculate best score per contest per student in the batch
+    SELECT 
+        s.student_id,
+        s.contest_id,
+        MAX(s.score * cp.point) as contest_weighted_score,
+        COUNT(CASE WHEN s.score > 0 THEN 1 END) as questions_solved_in_contest
+    FROM "submission" s
+    JOIN "contest_problem" cp ON cp.contest_id = s.contest_id AND cp.problem_id = s.problem_id
+    JOIN batch_contests bc ON bc.contest_id = s.contest_id
+    JOIN batch_students bs ON bs.student_id = s.student_id
+    GROUP BY s.student_id, s.contest_id
+),
+student_totals AS (
+    -- Calculate total stats per student
+    SELECT 
+        bs.student_id,
+        bs.name as student_name,
+        bs.email as student_email,
+        COALESCE(SUM(scs.contest_weighted_score), 0) as total_score,
+        COALESCE(COUNT(DISTINCT scs.contest_id), 0) as total_exams,
+        COALESCE(SUM(scs.questions_solved_in_contest), 0) as total_questions_solved,
+        MAX(sub.submitted_at) as last_submission_time
+    FROM batch_students bs
+    LEFT JOIN student_contest_scores scs ON scs.student_id = bs.student_id
+    LEFT JOIN "submission" sub ON sub.student_id = bs.student_id 
+        AND sub.contest_id IN (SELECT contest_id FROM batch_contests)
+    GROUP BY bs.student_id, bs.name, bs.email
+),
+ranked_students AS (
+    -- Rank students within the batch
+    SELECT 
+        st.*,
+        ROW_NUMBER() OVER (
+            ORDER BY st.total_score DESC, 
+                     st.total_questions_solved DESC, 
+                     st.last_submission_time ASC NULLS LAST
+        ) as current_rank
+    FROM student_totals st
+)
+SELECT 
+    rs.current_rank as "currentRank",
+    rs.total_exams as "totalExams",
+    rs.total_questions_solved as "totalQuestionsSolved",
+    rs.total_score as "totalScore"
+FROM student_info si
+LEFT JOIN ranked_students rs ON rs.student_id = si.student_id;
+`;
+
+        return result[0];
     }
 }
