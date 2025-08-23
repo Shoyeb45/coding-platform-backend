@@ -379,16 +379,26 @@ export class ContestRepository {
         });
     }
 
+    // batches, subject, totalQuestions
     static getContestLeaderboardData = async (contestId: string) => {
         const result = await prisma.$queryRaw<
             {
-                contestId: string;
+                id: string;
                 title: string;
                 description: string;
                 startDate: Date;
                 endDate: Date;
                 isPublished: boolean;
                 maximumPossibleScore: number;
+                totalQuestions: number;
+                subject: {
+                    id: string;
+                    name: string;
+                } | null;
+                batches: {
+                    id: string;
+                    name: string;
+                }[];
                 creator: {
                     id: string;
                     name: string;
@@ -444,7 +454,8 @@ contest_info AS (
         c."start_time", 
         c."end_time", 
         c."is_published",
-        c."created_by" AS creator_id
+        c."created_by" AS creator_id,
+        c."subject_id"
     FROM "contest" c
     WHERE c."id" = ${contestId}
 ),
@@ -456,12 +467,35 @@ creator_info AS (
     FROM "Teacher" t
     WHERE t."id" = (SELECT creator_id FROM contest_info)
 ),
+subject_info AS (
+    SELECT 
+        s."id", 
+        s."name"
+    FROM "Subject" s
+    WHERE s."id" = (SELECT subject_id FROM contest_info)
+),
+batch_info AS (
+    SELECT 
+        b."id", 
+        b."name"
+    FROM "Batch" b
+    JOIN "batch_contest" bc ON bc.batch_id = b.id
+    WHERE bc.contest_id = ${contestId}
+),
 max_possible_score AS (
     SELECT 
         cp.contest_id,
         SUM(cp.point * (p."problemWeight" + p."testcaseWeight")) AS maximum_score
     FROM "contest_problem" cp
     JOIN "problem" p ON p.id = cp.problem_id
+    WHERE cp.contest_id = ${contestId}
+    GROUP BY cp.contest_id
+),
+total_questions AS (
+    SELECT 
+        cp.contest_id,
+        COUNT(*) AS question_count
+    FROM "contest_problem" cp
     WHERE cp.contest_id = ${contestId}
     GROUP BY cp.contest_id
 )
@@ -473,6 +507,24 @@ SELECT
     ci."end_time" AS "endDate",
     ci."is_published" AS "isPublished",
     COALESCE(mps.maximum_score, 0) AS "maximumPossibleScore",
+    COALESCE(tq.question_count, 0) AS "totalQuestions",
+    CASE 
+        WHEN si.id IS NOT NULL THEN 
+            json_build_object(
+                'id', si.id,
+                'name', si.name
+            )
+        ELSE NULL 
+    END AS "subject",
+    COALESCE(
+        (SELECT json_agg(
+            json_build_object(
+                'id', bi.id,
+                'name', bi.name
+            )
+        ) FROM batch_info bi),
+        '[]'::json
+    ) AS "batches",
     json_build_object(
         'id', cr.id,
         'name', cr.name,
@@ -492,10 +544,11 @@ SELECT
     ) AS "leaderboard"
 FROM contest_info ci
 LEFT JOIN max_possible_score mps ON mps.contest_id = ci."id"
+LEFT JOIN total_questions tq ON tq.contest_id = ci."id"
 LEFT JOIN creator_info cr ON true
+LEFT JOIN subject_info si ON true
 LEFT JOIN leaderboard lb ON true
-GROUP BY ci.id, ci.title, ci.description, ci.start_time, ci.end_time, ci.is_published, mps.maximum_score, cr.id, cr.name, cr.email;
-`;
+GROUP BY ci.id, ci.title, ci.description, ci.start_time, ci.end_time, ci.is_published, mps.maximum_score, tq.question_count, si.id, si.name, cr.id, cr.name, cr.email;`
 
         return result; // Return single contest object (not array)
     };

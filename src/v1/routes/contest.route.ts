@@ -374,24 +374,41 @@ router.route("/moderators/:moderatorId")
  * @description API to get the leaderboard of the contest with contest information
  * @param contestId -> Id of the contest
  * @returns
- *  "data": {
-        "contestId": "cmek7tx2u0001n5qwe2fg75cn",
-        "title": "DSA IA 2",
-        "description": "Hard java programming contest.",
-        "startDate": "2025-08-20T15:00:00.000Z",
-        "endDate": "2025-08-21T18:06:00.000Z",
-        "maximumPossibleScore": 400,
-        "leaderboard": [
-            {
-                "studentId": "0780f3fc-080a-404c-a3e0-09cce8c6e3cb",
-                "studentName": "Shoyeb Student",
-                "studentEmail": "shoyeb.sot010069@pwioi.com",
-                "totalScore": 130,
-                "questionsSolved": 1,
-                "rank": 1
-            }
-        ]
+"data": {
+    "contestId": "cmek7tx2u0001n5qwe2fg75cn",
+    "title": "DSA IA 2",
+    "description": "Hard java programming contest.",
+    "startDate": "2025-08-20T15:00:00.000Z",
+    "endDate": "2025-08-21T18:06:00.000Z",
+    "isPublished": false,
+    "maximumPossibleScore": 400,
+    "totalQuestions": 1,
+    "subject": {
+        "id": "9b3274ab-1689-44fc-acf8-3877c9dfd848",
+        "name": "DSA"
     },
+    "batches": [
+        {
+            "id": "287d935a-9d5e-4a11-93a0-1c2efab305d7",
+            "name": "SOT2023"
+        }
+    ],
+    "creator": {
+        "id": "02640eb6-c461-4ff7-8bf5-7d1da1e5f665",
+        "name": "Shoyeb Teacher",
+        "email": "mohammad.ansari4@pw.live"
+    },
+    "leaderboard": [
+        {
+            "studentId": "0780f3fc-080a-404c-a3e0-09cce8c6e3cb",
+            "studentName": "Shoyeb Student",
+            "studentEmail": "shoyeb.sot010069@pwioi.com",
+            "totalScore": 130,
+            "questionsSolved": 1,
+            "rank": 1
+        }
+    ]
+},
  */
 router.route("/teacher/leaderboard/:contestId")
     .get(asyncHandler(ContestController.getTeacherContestLeaderboard));

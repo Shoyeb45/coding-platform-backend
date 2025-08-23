@@ -403,15 +403,10 @@ export class ContestService {
 
     // leaderboard
     static getTeacherContestLeaderboard = async (user: Express.Request["user"], contestId: string) => {
-        // this.authenticateTeacher(user);
 
         if (!contestId) {
             throw new ApiError("No contest id found.", HTTP_STATUS.BAD_REQUEST);
         }
-
-        // if (!(await this.checkContest(user?.id, contestId))) {
-        //     throw new ApiError("You are not allowed to fetch the leaderboard data.");
-        // }
 
         const leaderboard = await ContestRepository.getContestLeaderboardData(contestId);
 
@@ -421,6 +416,7 @@ export class ContestService {
 
         const data = leaderboard.map((lead) => ({
             ...lead,
+            totalQuestions: Number(lead.totalQuestions),
             maximumPossibleScore: Number(lead.maximumPossibleScore),
             leaderboard: lead.leaderboard.map((stud, idx) => ({
                 ...stud,
