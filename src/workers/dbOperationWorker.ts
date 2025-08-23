@@ -74,11 +74,14 @@ function calculateAverageResources(results: CodeRunnerResult["results"]): {
     return { maxExecutionTime, maxMemoryUsed };
 }
 
-function determineSubmissionStatus(passedTestCases: number, totalTestCases: number): string {
-    if (totalTestCases === 0) return "No Test Cases";
-    if (passedTestCases === totalTestCases) return "Accepted";
-    if (passedTestCases === 0) return "Wrong Answer";
-    return "Partially Accepted";
+function determineSubmissionStatus(results: CodeRunnerResult["results"]): string {
+
+    for (let i = 0; i < results.length; i++) {
+        if (!results[i].passed) {
+            return results[i].status;
+        }
+    }
+    return "Accepted";
 }
 
 
@@ -120,7 +123,7 @@ const dbWorker = new Worker<SubmissionRunnerResult>(
 
             // Calculate total score
             logger.info("Calculating total score...");
-            const status = determineSubmissionStatus(runnerResult.passedTestCases, runnerResult.totalTestCases);
+            const status = determineSubmissionStatus(runnerResult.results);
             const maxProblemdifficulty = scores?.problemWeight ?? 30;
             const maxTestcase = scores?.testcaseWeight ?? 70;
             
