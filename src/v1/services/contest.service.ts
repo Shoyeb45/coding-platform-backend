@@ -368,7 +368,9 @@ export class ContestService {
             nestedUpdates.push(() => {
                 data.contestModerators = {
                     deleteMany: {},
-                    create: moderators.map(mid => ({ moderatorId: mid }))
+                    create: moderators
+                                .filter(mid => mid !== user?.id) 
+                                .map(mid => ({ moderatorId: mid }))
                 };
             });
         }
