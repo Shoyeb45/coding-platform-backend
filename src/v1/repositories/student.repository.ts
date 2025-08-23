@@ -264,13 +264,21 @@ batch_students AS (
     FROM "Student" s
     JOIN student_info si ON si.batch_id = s.batch_id
 ),
+student_accepted_questions AS (
+    -- Count unique accepted submissions for each student
+    SELECT 
+        s.student_id,
+        COUNT(DISTINCT CONCAT(s.problem_id, '-', s.contest_id)) as total_accepted_questions
+    FROM "submission" s
+    WHERE s.student_id = ${studentId} AND s.status = 'Accepted'
+    GROUP BY s.student_id
+),
 student_contest_scores AS (
     -- Calculate best score per contest per student in the batch
     SELECT 
         s.student_id,
         s.contest_id,
-        MAX(s.score * cp.point) as contest_weighted_score,
-        COUNT(CASE WHEN s.score > 0 THEN 1 END) as questions_solved_in_contest
+        MAX(s.score * cp.point) as contest_weighted_score
     FROM "submission" s
     JOIN "contest_problem" cp ON cp.contest_id = s.contest_id AND cp.problem_id = s.problem_id
     JOIN batch_contests bc ON bc.contest_id = s.contest_id
@@ -285,7 +293,6 @@ student_totals AS (
         bs.email as student_email,
         COALESCE(SUM(scs.contest_weighted_score), 0) as total_score,
         COALESCE(COUNT(DISTINCT scs.contest_id), 0) as total_exams,
-        COALESCE(SUM(scs.questions_solved_in_contest), 0) as total_questions_solved,
         MAX(sub.submitted_at) as last_submission_time
     FROM batch_students bs
     LEFT JOIN student_contest_scores scs ON scs.student_id = bs.student_id
@@ -299,7 +306,7 @@ ranked_students AS (
         st.*,
         ROW_NUMBER() OVER (
             ORDER BY st.total_score DESC, 
-                     st.total_questions_solved DESC, 
+                     st.total_exams DESC,
                      st.last_submission_time ASC NULLS LAST
         ) as current_rank
     FROM student_totals st
@@ -307,10 +314,11 @@ ranked_students AS (
 SELECT 
     rs.current_rank as "currentRank",
     rs.total_exams as "totalExams",
-    rs.total_questions_solved as "totalQuestionsSolved",
+    COALESCE(saq.total_accepted_questions, 0) as "totalQuestionsSolved",
     rs.total_score as "totalScore"
 FROM student_info si
-LEFT JOIN ranked_students rs ON rs.student_id = si.student_id;
+LEFT JOIN ranked_students rs ON rs.student_id = si.student_id
+LEFT JOIN student_accepted_questions saq ON saq.student_id = si.student_id;
 `;
 
         return result[0];
