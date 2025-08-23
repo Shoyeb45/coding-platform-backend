@@ -104,16 +104,28 @@ export class StudentRepository {
                 finalScore: number;
                 rank: number;
                 isPublished: boolean;
+                subject: {
+                    id: string;
+                    name: string;
+                    code: string;
+                } | null; // Nullable because subjectId is optional in Contest
             }[]
         >`
     WITH past_contests AS (
-      SELECT c."id", c."title", c."description", c."start_time", c."end_time", c."is_published"
+      SELECT 
+        c."id", 
+        c."title", 
+        c."description", 
+        c."start_time", 
+        c."end_time", 
+        c."is_published",
+        c."subject_id"
       FROM "contest" c
       WHERE c."end_time" < NOW()
     ),
     contest_max_score AS (
       SELECT 
-        cp."contest_id" AS contest_id,
+        cp."contest_id",
         SUM(cp."point" * (p."problemWeight" + p."testcaseWeight")) AS max_score,
         COUNT(cp."problem_id") AS total_questions
       FROM "contest_problem" cp
@@ -137,7 +149,9 @@ export class StudentRepository {
         SUM(cp."point" * sbs."best_score") AS final_score,
         COUNT(CASE WHEN sbs."best_score" > 0 THEN 1 END) AS questions_solved
       FROM student_best_submissions sbs
-      JOIN "contest_problem" cp ON cp."contest_id" = sbs."contest_id" AND cp."problem_id" = sbs."problem_id"
+      JOIN "contest_problem" cp 
+        ON cp."contest_id" = sbs."contest_id" 
+       AND cp."problem_id" = sbs."problem_id"
       GROUP BY sbs."contest_id", sbs."student_id"
     ),
     contest_leaderboard AS (
@@ -157,6 +171,7 @@ export class StudentRepository {
         pc."start_time" AS start_date,
         pc."end_time" AS end_date,
         pc."is_published",
+        pc."subject_id",
         cms.max_score AS maximum_possible_score,
         cms.total_questions,
         COALESCE(scs.final_score, 0) AS final_score,
@@ -164,23 +179,33 @@ export class StudentRepository {
         cl.rank
       FROM past_contests pc
       JOIN contest_max_score cms ON cms.contest_id = pc."id"
-      LEFT JOIN student_contest_scores scs ON scs."contest_id" = pc."id" AND scs."student_id" = ${studentId}
-      LEFT JOIN contest_leaderboard cl ON cl."contest_id" = pc."id" AND cl."student_id" = ${studentId}
+      LEFT JOIN student_contest_scores scs 
+        ON scs."contest_id" = pc."id" 
+       AND scs."student_id" = ${studentId}
+      LEFT JOIN contest_leaderboard cl 
+        ON cl."contest_id" = pc."id" 
+       AND cl."student_id" = ${studentId}
     )
     SELECT 
-      contest_id AS "contest_id",
-      title,
-      description,
-      start_date AS "startDate",
-      end_date AS "endDate",
-      maximum_possible_score AS "maximumPossibleScore",
-      total_questions AS "totalQuestions",
-      questions_solved AS "questionsSolved",
-      final_score AS "finalScore",
-      rank::int,
-      is_published AS "isPublished"
-    FROM student_past_contests
-    ORDER BY end_date DESC;
+      spc.contest_id AS "contest_id",
+      spc.title,
+      spc.description,
+      spc.start_date AS "startDate",
+      spc.end_date AS "endDate",
+      spc.maximum_possible_score AS "maximumPossibleScore",
+      spc.total_questions AS "totalQuestions",
+      spc.questions_solved AS "questionsSolved",
+      spc.final_score AS "finalScore",
+      spc.rank::int,
+      spc.is_published AS "isPublished",
+      json_build_object(
+        'id', s."id",
+        'name', s."name",
+        'code', s."code"
+      ) AS "subject"
+    FROM student_past_contests spc
+    LEFT JOIN "Subject" s ON s."id" = spc."subject_id"
+    ORDER BY spc.end_date DESC;
   `;
 
         return result;
@@ -204,7 +229,7 @@ export class StudentRepository {
                                 status: "Accepted", // Adjust if status is stored differently
                             },
                             select: {
-                                  id: true,
+                                id: true,
                             },
                             take: 1, // Only need one to check existence
                         },

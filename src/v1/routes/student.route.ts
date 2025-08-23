@@ -79,9 +79,15 @@ router.route("/problems")
         "totalQuestions": 2,
         "questionsSolved": 0,
         "finalScore": 0,
-        "rank": 0
-    }, ... , { }]
-}
+        "rank": 0,
+        "isPublished": false,
+        "subject": {
+            "id": "9340dd82-b6f1-4211-95f3-2c8afc6862a6",
+            "name": "Javascript",
+            "code": "24BJS102"
+        }
+    } ,....., {} ]
+},
  */
 router.route("/contest/past")
     .get(authenticateUser, asyncHandler(StudentController.getPastContests))
