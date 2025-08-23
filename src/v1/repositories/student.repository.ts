@@ -185,4 +185,32 @@ export class StudentRepository {
 
         return result;
     };
+
+
+    static getProblemsOfTheContest = async (studentId: string, contestId: string) => {
+        return await prisma.contestProblem.findMany({
+            where: {
+                contestId
+            },
+            select: {
+                problem: {
+                    select: {
+                        id: true,
+                        title: true,
+                        difficulty: true,
+                        submissions: {
+                            where: {
+                                studentId,
+                                status: "Accepted", // Adjust if status is stored differently
+                            },
+                            select: {
+                                  id: true,
+                            },
+                            take: 1, // Only need one to check existence
+                        },
+                    }
+                }, point: true
+            }
+        })
+    }
 }

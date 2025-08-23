@@ -213,16 +213,59 @@ router.route("/:contestId")
  * @description Get all the problems of particular contest
  * @param contestId id of the contest
  * @returns
- * data: {
- *      problems: {
- *          id: string;  // which u will use to delete the problem from the contest
-            problem: {
-                id: string;
-                title: string;
-                difficulty: $Enums.Difficulty;
-            }
-        }[]
- * }
+"data": {
+    "id": "cmek7tx2u0001n5qwe2fg75cn",
+    "title": "DSA IA 2",
+    "description": "Hard java programming contest.",
+    "startTime": "2025-08-20T15:00:00.000Z",
+    "endTime": "2025-08-21T18:06:00.000Z",
+    "creator": {
+        "id": "02640eb6-c461-4ff7-8bf5-7d1da1e5f665",
+        "name": "Shoyeb Teacher",
+        "email": "mohammad.ansari4@pw.live",
+        "designation": "Professor"
+    },
+    "subject": {
+        "id": "9b3274ab-1689-44fc-acf8-3877c9dfd848",
+        "name": "DSA"
+    },
+    "batchContests": [
+        {
+            "id": "287d935a-9d5e-4a11-93a0-1c2efab305d7",
+            "name": "SOT2023"
+        }
+    ],
+    "contestModerators": [],
+    "tags": [
+        {
+            "id": "cmek33xog0000f8icqcf79rwm",
+            "name": "Two Pointers"
+        }
+    ],
+    "allowedLanguages": [
+        {
+            "id": "cmek5u1j80003n5ds1sz09qbz",
+            "name": "C++"
+        }
+    ],
+    "problems": [
+        {
+            "id": "cmek5a0oq0001n59gdt5o4lhy",
+            "title": "Two Sum",
+            "difficulty": $Enums.Difficulty;
+            "point": 4,
+            "isSolved": false
+        }  <-- For "STUDENT"
+
+        {
+            "title": string;
+            "id": string;
+            "difficulty": $Enums.Difficulty;
+            "problemWeight": number;
+            "testcaseWeight": number;
+        };
+    ]
+},
  */
 router.route("/problem/:contestId")
     .get(asyncHandler(ContestController.getAllProblems));
@@ -252,7 +295,7 @@ router.route("/problem/:contestId")
                     "difficulty": "Easy",
                     "testcaseWeight": 70,
                     "problemWeight": 30
-                }
+                }  
             }
         ]
     }
@@ -352,7 +395,7 @@ router.route("/moderators/:moderatorId")
  */
 router.route("/teacher/leaderboard/:contestId")
     .get(asyncHandler(ContestController.getTeacherContestLeaderboard));
-    
+
 
 /**
  * GET /problem/detail/:problemId?contestId=

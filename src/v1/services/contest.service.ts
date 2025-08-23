@@ -8,6 +8,7 @@ import { cleanObject, convertToNormalString } from "../../utils/helper";
 import { ProblemRepository } from "../repositories/problem.repository";
 import { TestcaseRepository } from "../repositories/testcase.repository";
 import { S3Service } from "../../utils/s3client";
+import { StudentRepository } from "../repositories/student.repository";
 
 
 export class ContestService {
@@ -109,7 +110,7 @@ export class ContestService {
         const [problemDetail, testcases] = await Promise.all([
             ContestRepository.getProblemDetails(contestId, problemId),
             TestcaseRepository.getTestcases({ problemId, isSample: true })
-        ]); 
+        ]);
 
         if (!problemDetail) {
             throw new ApiError("Failed to fetch problem details.");
@@ -117,10 +118,10 @@ export class ContestService {
         if (!testcases) {
             throw new ApiError("Failed to fetch sample testcases from database.");
         }
-        
-        problemDetail.problemLanguage = problemDetail.problemLanguage.map((pl) => ({ 
-            ...pl, 
-            boilerplate: convertToNormalString(pl.boilerplate) 
+
+        problemDetail.problemLanguage = problemDetail.problemLanguage.map((pl) => ({
+            ...pl,
+            boilerplate: convertToNormalString(pl.boilerplate)
         }));
 
 
@@ -132,11 +133,11 @@ export class ContestService {
                 output: await S3Service.getInstance().getFileContent(testcase.output),
             }))
         );
-        const formattedData = { 
+        const formattedData = {
             problemDetail: {
                 ...problemDetail,
                 problemTags: problemDetail.problemTags.map((tag) => ({ ...tag.tag }))
-            }, 
+            },
             testcases: data
         };
         return formattedData;
@@ -338,7 +339,22 @@ export class ContestService {
             throw new ApiError("No contest exists.");
         }
 
-        const problems = await ContestRepository.getAllProblems(contestId);
+        // 
+        // const problems = await ContestRepository.getAllProblems(contestId);
+        let problems;
+
+        if (user?.role === "STUDENT") {
+            problems = await StudentRepository.getProblemsOfTheContest(user.id, contestId);
+            problems = problems.map((problem) => ({ 
+                ...problem.problem, 
+                submissions: undefined, 
+                point: problem.point,
+                isSolved: problem.problem.submissions.length > 0 
+            }));
+            // id, title, point, isSolved
+        } else {
+            problems = await ContestRepository.getAllProblems(contestId);
+        }
         if (!problems) {
             throw new ApiError("Failed to fetch problems.");
         }
@@ -388,7 +404,7 @@ export class ContestService {
     // leaderboard
     static getTeacherContestLeaderboard = async (user: Express.Request["user"], contestId: string) => {
         // this.authenticateTeacher(user);
-       
+
         if (!contestId) {
             throw new ApiError("No contest id found.", HTTP_STATUS.BAD_REQUEST);
         }
@@ -403,14 +419,14 @@ export class ContestService {
             throw new ApiError("Failed to fetch the leaderboard for contest.");
         }
 
-        const data = leaderboard.map((lead) => ({ 
-            ...lead, 
-            maximumPossibleScore: Number(lead.maximumPossibleScore), 
-            leaderboard: lead.leaderboard.map((stud, idx) => ({ 
+        const data = leaderboard.map((lead) => ({
+            ...lead,
+            maximumPossibleScore: Number(lead.maximumPossibleScore),
+            leaderboard: lead.leaderboard.map((stud, idx) => ({
                 ...stud,
-                rank: idx + 1, 
-                totalScore: Number(stud.totalScore) 
-            })) 
+                rank: idx + 1,
+                totalScore: Number(stud.totalScore)
+            }))
         }));
 
         return data[0];
