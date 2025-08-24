@@ -231,6 +231,7 @@ export class StudentRepository {
                             },
                             take: 1, // Only need one to check existence
                         },
+                        testcaseWeight: true, problemWeight: true
                     }
                 }, point: true
             }

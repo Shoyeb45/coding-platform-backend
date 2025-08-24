@@ -446,13 +446,22 @@ export class ContestService {
         let problems;
 
         if (user?.role === "STUDENT") {
-            problems = await StudentRepository.getProblemsOfTheContest(user?.id!, contestId);
-            problems = problems.map(problem => ({ 
-                ...problem.problem, 
-                submissions: undefined, 
-                point: problem.point,
-                isSolved: problem.problem.submissions.length > 0 
-            }));
+            const now = new Date();
+            // only when the contest is live
+            if (now >= contest.startTime && now <= contest.endTime) {
+                problems = await StudentRepository.getProblemsOfTheContest(user?.id!, contestId);
+                problems = problems.map(problem => (cleanObject({ 
+                    ...problem.problem, 
+                    submissions: undefined, 
+                    point: problem.point,
+                    isSolved: problem.problem.submissions.length > 0 
+                })));
+            } else {
+                return {
+                    ...this.formatContestData(contest),
+                    problems: []
+                };
+            }
         } else {
             problems = await ContestRepository.getAllProblems(contestId);
         }
