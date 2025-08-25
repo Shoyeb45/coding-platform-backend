@@ -34,7 +34,7 @@ export class SubmissionRepository {
                     select: {
                         id: true, name: true
                     }
-                }, executionTime: true, submittedAt: true, code: true
+                }, executionTime: true, submittedAt: true, code: true, memoryUsed: true
             }
         });
         return data;

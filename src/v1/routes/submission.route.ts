@@ -68,7 +68,8 @@ router.route("/active/:submissionId")
             },
             "executionTime": null,
             "submittedAt": "2025-08-20T21:20:28.038Z",
-            "code": string
+            "code": string,
+            "memoryUsed": number
         }
     ]
 },
