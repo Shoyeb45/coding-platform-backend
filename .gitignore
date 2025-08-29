@@ -3,3 +3,8 @@ dist
 node_modules
 logs
 /src/generated/prisma
+testcases
+testcaseGenerator.js
+uploadInAWS.js
+links
+tsconfig.tsbuildinfo

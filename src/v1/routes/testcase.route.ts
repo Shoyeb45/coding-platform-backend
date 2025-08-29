@@ -1,29 +1,32 @@
 import { Router } from "express";
 import { TestcaseController } from "../controllers/testcase.controller";
-import { ZBulkTestcaseCreate, ZTestcase, ZTestcaseCreate, ZTestcases } from "../types/testcase.type";
+import { ZBulkTestcaseCreate, ZTestcase, ZTestcaseCreate, ZTestCaseEdit, ZTestcases } from "../types/testcase.type";
 import { validate } from "../../middlewares/validate.middleware";
 import { asyncHandler } from "../../utils/asyncHandler";
+import { authenticateUser } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
 router.route("/:problemId/presign")
-    .post(validate(ZTestcaseCreate), asyncHandler(TestcaseController.getPresignUrl));
-
+    .post(authenticateUser, validate(ZTestcaseCreate), asyncHandler(TestcaseController.getPresignUrl));
     
 router.route("/:problemId/bulk-presign")
-    .post(validate(ZBulkTestcaseCreate), asyncHandler(TestcaseController.getBulkPresignUrl));
+    .post(authenticateUser, validate(ZBulkTestcaseCreate), asyncHandler(TestcaseController.getBulkPresignUrl));
 
 router.route("/:testcaseId")
-    .delete(asyncHandler(TestcaseController.removeTestcase));
+    .delete(authenticateUser, asyncHandler(TestcaseController.removeTestcase))
+    .patch(authenticateUser, validate(ZTestCaseEdit), asyncHandler(TestcaseController.editTestcase));
     
 router.route("/")
-    .post(validate(ZTestcase), asyncHandler(TestcaseController.createTestcase))
-    .get(asyncHandler(TestcaseController.getTestcases));
+    .post(authenticateUser, validate(ZTestcases), asyncHandler(TestcaseController.createTestcases));
 
 router.route("/all/:problemId")
-    .get(asyncHandler(TestcaseController.getAllTestCases));
+    .get(authenticateUser, asyncHandler(TestcaseController.getAllTestCases));
 
-router.route("/bulk")
-    .post(validate(ZTestcases), asyncHandler(TestcaseController.createTestcases));
-    
+router.route("/:testcaseId")
+    .get(authenticateUser, asyncHandler(TestcaseController.getTestcase));
+
+router.route("/sample/:problemId")
+    .get(asyncHandler(TestcaseController.getSampleTestCase));
+
 export default router;

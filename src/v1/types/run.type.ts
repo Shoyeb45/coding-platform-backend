@@ -7,7 +7,8 @@ export const ZCustomRun = z.object({
         output: z.string(),
     })),
     code: z.string(),
-    languageId: z.string()
+    languageId: z.string(),
+    languageCode: z.string()
 });
 
 export type TCustomRun = z.infer<typeof ZCustomRun>;

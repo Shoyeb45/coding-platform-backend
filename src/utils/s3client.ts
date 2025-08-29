@@ -1,7 +1,9 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 import { config } from "../config";
 import { logger } from "./logger";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { StreamingBlobPayloadOutputTypes } from "@smithy/types/dist-types/streaming-payload/streaming-blob-payload-output-types";
+import { Readable } from "stream";
 
 export class S3Service {
     private s3client: S3Client;
@@ -43,11 +45,79 @@ export class S3Service {
     }
 
     async deleteObject(key: string) {
-        logger.info(`Deleting object with key: ${key}`)
-        const command = new DeleteObjectCommand({
-            Bucket: config.s3BucketName,
-            Key: key
+        if (!key) {
+            throw new Error("No key provided for deletion.");
+        }
+        logger.info(`Deleting object with key: ${key}`);
+
+        try {
+            const command = new DeleteObjectCommand({
+                Bucket: config.s3BucketName,
+                Key: key
+            });
+            await this.s3client.send(command);
+            logger.info(`Successfully deleted object: ${key}`);
+        } catch (error) {
+            logger.error(`Failed to delete object ${key}: ${error}`);
+            throw error;
+        }
+    }
+    async listObjects(prefix?: string): Promise<string[]> {
+        logger.info(`Listing objects with prefix: ${prefix || "ALL"}`);
+        let continuationToken: string | undefined = undefined;
+        const allKeys: string[] = [];
+
+        do {
+            const command: ListObjectsV2Command = new ListObjectsV2Command({
+                Bucket: config.s3BucketName,
+                Prefix: prefix,
+                ContinuationToken: continuationToken,
+            });
+
+            const response = await this.s3client.send(command);
+
+            if (response.Contents) {
+                for (const obj of response.Contents) {
+                    if (obj.Key) {
+                        allKeys.push(obj.Key);
+                    }
+                }
+            }
+
+            continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
+        } while (continuationToken);
+
+        logger.info(`Found ${allKeys.length} objects in S3.`);
+        return allKeys;
+    }
+
+    async getPreviewPresignedUrl(key: string) {
+        const command = new GetObjectCommand({
+            Key: key,
+            Bucket: config.s3BucketName
         });
-        const obj = await this.s3client.send(command);
+        return await getSignedUrl(this.s3client, command, { expiresIn: 60 * 20 });
+    }
+
+    
+    async getFileContent(key: string): Promise<string> {
+        const command = new GetObjectCommand({ Bucket: config.s3BucketName, Key: key });
+        const response = await this.s3client.send(command);
+
+        if (!response.Body) {
+            throw new Error("No body returned from S3");
+        }
+        
+        // Cast explicitly to Readable (safe in Node)
+        return await this.streamToString(response.Body as Readable);
+    }
+    
+    private streamToString(stream: Readable): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const chunks: Buffer[] = [];
+            stream.on("data", (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+            stream.on("error", reject);
+            stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+        });
     }
 }
