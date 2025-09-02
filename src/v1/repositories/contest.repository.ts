@@ -35,11 +35,11 @@ export class ContestRepository {
         return await prisma.contest.findFirst({ where: { title } });
     }
 
-    static publishContest = async (contestId: string) => {
+    static publishContest = async (contestId: string, isPublished: boolean) => {
         return await prisma.contest.update({
             where: { id: contestId },
             data: {
-                isPublished: true
+                isPublished: !isPublished
             }, select: {
                 id: true, title: true, description: true
             }
@@ -64,7 +64,7 @@ export class ContestRepository {
         const rawData = await prisma.contest.findFirst({
             where: { id },
             select: {
-                id: true, title: true, description: true, startTime: true, endTime: true, batchContests: {
+                id: true, title: true, description: true, isPublished: true, startTime: true, endTime: true, batchContests: {
                     select: {
                         batch: {
                             select: {

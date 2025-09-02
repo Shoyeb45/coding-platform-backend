@@ -260,7 +260,7 @@ export class ProblemService {
                 ...problemDetail, 
                 problemTags: problemDetail.problemTags.map(pt => ({ ...pt.tag }))
             },
-            sampleTestcases: processedTestcases
+            testcases: processedTestcases
         };
     }
 
