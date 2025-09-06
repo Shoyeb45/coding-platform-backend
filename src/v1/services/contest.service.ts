@@ -1,11 +1,8 @@
-import { Response } from "express";
 import { TContest, TContestCreate, TContestMod, TContestProblem, TProblemContestEdit } from "../types/contest.type"
-import { logger } from "../../utils/logger"
 import { ContestRepository } from "../repositories/contest.repository";
 import { ApiError } from "../../utils/ApiError";
 import { HTTP_STATUS } from "../../config/httpCodes";
 import { cleanObject, convertToNormalString } from "../../utils/helper";
-import { ProblemRepository } from "../repositories/problem.repository";
 import { TestcaseRepository } from "../repositories/testcase.repository";
 import { S3Service } from "../../utils/s3client";
 import { StudentRepository } from "../repositories/student.repository";

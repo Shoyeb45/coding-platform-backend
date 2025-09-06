@@ -1,10 +1,6 @@
 import { Prisma } from "@prisma/client";
-import { ApiError } from "../../utils/ApiError";
-import { logger } from "../../utils/logger";
 import { prisma } from "../../utils/prisma";
-import { TContest, TContestCreate, TContestMod, TContestProblem, TProblemContestEdit } from "../types/contest.type";
-import { TProblemCreate, TProblemFilter, TProblemModerator, TProblemUpdate } from "../types/problem.type";
-import { cleanObject } from "../../utils/helper";
+import { TContestCreate, TContestMod, TContestProblem, TProblemContestEdit } from "../types/contest.type";
 
 export class ContestRepository {
 
@@ -227,7 +223,7 @@ export class ContestRepository {
     }
 
     static addProblemToContest = async (contestId: string, data: TContestProblem) => {
-        let problemData: {
+        const problemData: {
             point: number, problemId: string, contestId: string
         }[] = data.problems.map((problem) => ({ contestId, point: problem.point, problemId: problem.problemId }));
 

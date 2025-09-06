@@ -1,4 +1,3 @@
-import { title } from "process";
 import { logger } from "../../utils/logger";
 import { prisma } from "../../utils/prisma";
 import { TProblemCreate, TProblemDriver, TProblemDriverUpdate, TProblemFilter, TProblemModerator, TProblemUpdate } from "../types/problem.type";

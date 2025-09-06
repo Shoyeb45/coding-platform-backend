@@ -3,13 +3,14 @@ import express, { json, urlencoded } from "express";
 import helmet from "helmet";
 import { httpLogger } from "./middlewares/logger.middleware";
 import cookieParser from "cookie-parser";
-import { AuthUser, UserRole } from "./types/auth.type";
+import { AuthUser } from "./types/auth.type";
 import cors from "cors";
+import { config } from "./config";
 
 declare global {
   namespace Express {
     interface Request {
-      user?: AuthUser
+      user?: AuthUser;
     }
   }
 }
@@ -25,25 +26,22 @@ export function createHttpServer() {
     .use(cookieParser())
     .get("/", (req, res) => {
       res.json({
-        "message": "Coding platform app is running",
-        success: true
-      })
+        message: "Coding platform app is running",
+        success: true,
+      });
     })
-    .use(cors({
-      origin: "http://localhost:3000",
-      credentials: true
-    }))
+    .use(
+      cors({
+        origin: config.frontend_url,
+        credentials: true,
+      })
+    )
     .get("/health", (req, res) => {
       res.json({
-        "message": "Coding platform app is running and it's healthy",
-        success: true
-      })
-    })
-
-
-
-  const PORT = process.env.PORT || 4000;
-
+        message: "Coding platform app is running and it's healthy",
+        success: true,
+      });
+    });
 
   return app;
 }

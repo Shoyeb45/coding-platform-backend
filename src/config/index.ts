@@ -13,6 +13,8 @@ export const config = {
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
     s3BucketName: process.env.S3_BUCKET_NAME,
 
+    // frontend url
+    frontend_url : process.env.FRONTEND_URL || "http://localhost:3000",
     // Judge0 secret
     judge0ApiUrl: process.env.JUDGE0_API_URL,
     judge0ApiKey: process.env.JUDGE0_API_KEY,

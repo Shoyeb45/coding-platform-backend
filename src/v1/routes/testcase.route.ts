@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { TestcaseController } from "../controllers/testcase.controller";
-import { ZBulkTestcaseCreate, ZTestcase, ZTestcaseCreate, ZTestCaseEdit, ZTestcases } from "../types/testcase.type";
+import { ZBulkTestcaseCreate, ZTestcaseCreate, ZTestCaseEdit, ZTestcases } from "../types/testcase.type";
 import { validate } from "../../middlewares/validate.middleware";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { authenticateUser } from "../../middlewares/auth.middleware";
