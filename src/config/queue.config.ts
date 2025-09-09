@@ -7,7 +7,6 @@ export const redisConfig: ConnectionOptions = {
   host: config.redisHost,
   port: config.redisPort,
   password: config.redisPassword,
-  tls: config.redisTls ? {} : undefined,
   retryDelayOnFailover: 100,
   enableReadyCheck: false,
   maxRetriesPerRequest: null,
