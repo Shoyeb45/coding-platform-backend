@@ -1,7 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { ApiError } from "../utils/ApiError";
-import { HTTP_STATUS } from "../config/httpCodes";
-import { AuthUser, UserRole } from "../types/auth.type";
+import { UserRole } from "../types/auth.type";
 import { config } from "../config";
 import jwt from "jsonwebtoken";
 import { logger } from "../utils/logger";

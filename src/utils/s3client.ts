@@ -2,7 +2,6 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command, 
 import { config } from "../config";
 import { logger } from "./logger";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { StreamingBlobPayloadOutputTypes } from "@smithy/types/dist-types/streaming-payload/streaming-blob-payload-output-types";
 import { Readable } from "stream";
 
 export class S3Service {

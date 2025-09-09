@@ -1,10 +1,6 @@
 import { Prisma } from "@prisma/client";
-import { ApiError } from "../../utils/ApiError";
-import { logger } from "../../utils/logger";
 import { prisma } from "../../utils/prisma";
-import { TContest, TContestCreate, TContestMod, TContestProblem, TProblemContestEdit } from "../types/contest.type";
-import { TProblemCreate, TProblemFilter, TProblemModerator, TProblemUpdate } from "../types/problem.type";
-import { cleanObject } from "../../utils/helper";
+import { TContestCreate, TContestMod, TContestProblem, TProblemContestEdit } from "../types/contest.type";
 
 export class ContestRepository {
 
@@ -35,11 +31,11 @@ export class ContestRepository {
         return await prisma.contest.findFirst({ where: { title } });
     }
 
-    static publishContest = async (contestId: string) => {
+    static publishContest = async (contestId: string, isPublished: boolean) => {
         return await prisma.contest.update({
             where: { id: contestId },
             data: {
-                isPublished: true
+                isPublished: !isPublished
             }, select: {
                 id: true, title: true, description: true
             }
@@ -64,7 +60,7 @@ export class ContestRepository {
         const rawData = await prisma.contest.findFirst({
             where: { id },
             select: {
-                id: true, title: true, description: true, startTime: true, endTime: true, batchContests: {
+                id: true, title: true, description: true, isPublished: true, startTime: true, endTime: true, batchContests: {
                     select: {
                         batch: {
                             select: {
@@ -227,7 +223,7 @@ export class ContestRepository {
     }
 
     static addProblemToContest = async (contestId: string, data: TContestProblem) => {
-        let problemData: {
+        const problemData: {
             point: number, problemId: string, contestId: string
         }[] = data.problems.map((problem) => ({ contestId, point: problem.point, problemId: problem.problemId }));
 

@@ -38,7 +38,7 @@ export class RunService {
             new ApiError("No run id found", HTTP_STATUS.BAD_REQUEST);
         }
         // get result from redis
-        let result = await RedisClient.getInstance().getResult(runId);
+        const result = await RedisClient.getInstance().getResult(runId);
         if (!result) {
             throw new ApiError("No submission found for given run id", HTTP_STATUS.INTERNAL_SERVER_ERROR);
         }

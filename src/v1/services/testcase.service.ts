@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
-import { TBulkTestCaseCreate, TTestcase, TTestCaseCreate, TTestCaseEdit, TTestcaseFilter, TTestcases } from "../types/testcase.type";
+import {  Response } from "express";
+import { TBulkTestCaseCreate, TTestCaseCreate, TTestCaseEdit, TTestcaseFilter, TTestcases } from "../types/testcase.type";
 import { ApiError } from "../../utils/ApiError";
 import { HTTP_STATUS } from "../../config/httpCodes";
 import { S3Service } from "../../utils/s3client";
@@ -31,8 +31,8 @@ export class TestcaseService {
             throw new ApiError("No problem exist with given id");
         }
 
-        let teacher = problem?.creator?.id === teacherId;
-        let moderator = await this.isModeratorAllowed(teacherId, problemId);
+        const teacher = problem?.creator?.id === teacherId;
+        const moderator = await this.isModeratorAllowed(teacherId, problemId);
 
         return teacher || moderator;
     }
@@ -212,7 +212,7 @@ export class TestcaseService {
             throw new ApiError("No testcase found with given id.");
         }
 
-        let teacher = data.problem.creator?.id === teacherId;
+        const teacher = data.problem.creator?.id === teacherId;
         let moderator = false;
         // now check moderators
         for (const mod of data.problem.problemModerators) {
@@ -257,7 +257,7 @@ export class TestcaseService {
             throw new ApiError("No problem found with given id", HTTP_STATUS.BAD_REQUEST);
         }
 
-        let testcases = await TestcaseRepository.getTestcases({ problemId, isSample: true });
+        const testcases = await TestcaseRepository.getTestcases({ problemId, isSample: true });
 
         if (!testcases) {
             throw new ApiError("Failed to fetch sample testcases from database.");

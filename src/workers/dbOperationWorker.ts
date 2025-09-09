@@ -290,7 +290,7 @@ function isValidationError(error: any): boolean {
 }
 
 // Event handlers
-dbWorker.on('completed', (job, result) => {
+dbWorker.on('completed', (job) => {
     logger.info(`Database operation completed successfully for job ${job.id}:`);
 });
 

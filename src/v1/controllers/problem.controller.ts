@@ -5,7 +5,6 @@ import { ZProblemFilter } from "../types/problem.type";
 import { HTTP_STATUS } from "../../config/httpCodes";
 import { ApiResponse } from "../../utils/ApiResponse";
 import { ApiError } from "../../utils/ApiError";
-import { cleanObject } from "../../utils/helper";
 
 export class ProblemController {
     static createProblem = async (req: Request, res: Response, next: NextFunction) => {
@@ -70,7 +69,7 @@ export class ProblemController {
             new ApiResponse("Successfully fetched details of the problem.", data)
         );
     }
-    static getAllProblemsOfCreator = async (req: Request, res: Response, next: NextFunction) => {
+    static getAllProblemsOfCreator = async (req: Request, res: Response) => {
 
         const creatorId = req.user?.id;
         await ProblemService.getProblemsOfCreator(creatorId, res);
@@ -83,7 +82,7 @@ export class ProblemController {
         return;
     }
 
-    static removeProblem = async (req: Request, res: Response, next: NextFunction) => {
+    static removeProblem = async (req: Request, res: Response) => {
         if (req.user?.role !== "ASSISTANT_TEACHER" && req.user?.role !== "TEACHER") {
             throw new ApiError("Only teacher can add moderators to the problem", HTTP_STATUS.UNAUTHORIZED);
         }
@@ -91,17 +90,15 @@ export class ProblemController {
         await ProblemService.removeProblem(req.user?.id, id, res);
     }
 
-    static addModeratorsToProblem = async (req: Request, res: Response, next: NextFunction) => {
+    static addModeratorsToProblem = async (req: Request, res: Response) => {
         if (req.user?.role !== "ASSISTANT_TEACHER" && req.user?.role !== "TEACHER") {
             throw new ApiError("Only teacher can add moderators to the problem", HTTP_STATUS.UNAUTHORIZED);
         }
         await ProblemService.addModeratorsToProblem(req.user?.id, req.body, res);
     }
 
-    static ProblemController = async (req: Request, res: Response) => {
-        const id = req.params.id;
-    }
-    static getModeratorsOfProblem = async (req: Request, res: Response, next: NextFunction) => {
+ 
+    static getModeratorsOfProblem = async (req: Request, res: Response) => {
         await ProblemService.getModeratorsOfProblem(req.params.problemId, res);
     }
 

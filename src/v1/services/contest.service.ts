@@ -1,11 +1,8 @@
-import { Response } from "express";
 import { TContest, TContestCreate, TContestMod, TContestProblem, TProblemContestEdit } from "../types/contest.type"
-import { logger } from "../../utils/logger"
 import { ContestRepository } from "../repositories/contest.repository";
 import { ApiError } from "../../utils/ApiError";
 import { HTTP_STATUS } from "../../config/httpCodes";
 import { cleanObject, convertToNormalString } from "../../utils/helper";
-import { ProblemRepository } from "../repositories/problem.repository";
 import { TestcaseRepository } from "../repositories/testcase.repository";
 import { S3Service } from "../../utils/s3client";
 import { StudentRepository } from "../repositories/student.repository";
@@ -209,7 +206,7 @@ export class ContestService {
             throw new ApiError("Cannot publish contest that hasn't ended yet", HTTP_STATUS.BAD_REQUEST);
         }
 
-        return await ContestRepository.publishContest(contestId);
+        return await ContestRepository.publishContest(contestId, contest.isPublished);
     }
 
     static async deleteModerator(user: Express.Request["user"], moderatorId: string) {
@@ -447,8 +444,8 @@ export class ContestService {
 
         if (user?.role === "STUDENT") {
             const now = new Date();
-            // only when the contest is live
-            if (now >= contest.startTime && now <= contest.endTime) {
+            // only when the contest is live or ended
+            if ((now >= contest.startTime && now <= contest.endTime) || now >= contest.endTime) {
                 problems = await StudentRepository.getProblemsOfTheContest(user?.id!, contestId);
                 problems = problems.map(problem => (cleanObject({ 
                     ...problem.problem, 

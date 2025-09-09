@@ -11,7 +11,7 @@ import { config } from '../config';
 export const codeRunnerWorker = new Worker<QueueDataType, CodeRunnerResult>(
   'code-execution',
   async (job: Job<QueueDataType>) => {
-    const { code, languageCode, testCases, problemId, runId } = job.data;
+    const { code, languageCode, testCases, runId } = job.data;
 
     logger.info(`Processing custom code exuecution, runId: ${runId}`);
 
@@ -23,7 +23,7 @@ export const codeRunnerWorker = new Worker<QueueDataType, CodeRunnerResult>(
 
     // Update progress
     await job.updateProgress(0);
-    let n = testCases.length;
+    const n = testCases.length;
     for (let i = 0; i < n; i++) {
       const stdin = testCases[i].input;
       const stdout = testCases[i].output;

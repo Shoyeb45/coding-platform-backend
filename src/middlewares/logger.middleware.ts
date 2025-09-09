@@ -1,12 +1,11 @@
 // middlewares/httpLogger.middleware.ts
-import pinoHttp from 'pino-http';
 import { logger } from '../utils/logger'; // your existing pino logger
 import { config } from '../config';
 export const httpLogger = (req: any, res: any, next: any) => {
-  const start = Date.now();
+  const start: number = Date.now();
   
   res.on('finish', () => {
-    const duration = Date.now() - start;
+    const duration: number = Date.now() - start;
     const { method, url, ip } = req;
     const { statusCode } = res;
     

@@ -10,7 +10,6 @@ import { ProblemRepository } from "../repositories/problem.repository";
 import { StudentRepository } from "../repositories/student.repository";
 import { SubmissionRepository } from "../repositories/submission.repository";
 import { TestcaseRepository } from "../repositories/testcase.repository";
-import { Judge0ExecutionResult } from "../types/judge0.type";
 import { RedisSubmission } from "../types/queue.type";
 import { SubmissionQueueType, TestcaseData, TSubmission } from "../types/submission.type";
 import { v4 as uuidv4 } from "uuid";
@@ -104,7 +103,6 @@ export class SubmissionService {
 
         const prelude = convertToNormalString(driverCodes.prelude);
         const driverCode = convertToNormalString(driverCodes.driverCode);
-        const boilerplate = convertToNormalString(driverCodes.boilerplate);
 
         return {
             prelude, driverCode, userCode: submissionData.code
@@ -175,7 +173,7 @@ export class SubmissionService {
             throw new ApiError("Submission id not found.", HTTP_STATUS.BAD_REQUEST)
         }
     
-        let value = await RedisClient.getInstance().getResult(submissionId);
+        const value = await RedisClient.getInstance().getResult(submissionId);
         if (!value) {
             throw new ApiError("No active submission found with given id");
         }

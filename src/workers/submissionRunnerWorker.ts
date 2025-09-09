@@ -6,7 +6,6 @@ import { logger } from "../utils/logger";
 import { RedisClient } from "../utils/redisClient";
 import { CodeRunnerResult, SubmissionRunnerResult } from "../v1/types/worker.type";
 import { dbQueue } from "../queues/codeExecution.queue";
-import { config } from "../config";
 
 
 
@@ -114,15 +113,21 @@ export const submissionRunnerWorker = new Worker<SubmissionQueueType, Submission
 
             return finalResult;
 
-        } catch (error: any) {
-            logger.error(`Batch processing failed: ${error.message}`);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                logger.error(`Batch processing failed: ${error.message}`);
+                await RedisClient.getInstance().setForRun(job.data.submissionId, JSON.stringify({
+                    status: "Failed",
+                    error: error.message
+                }));
+            } else {
+                logger.error("Batch processing failed with non-Error value");
 
-            // Update Redis with error status
-            await RedisClient.getInstance().setForRun(job.data.submissionId, JSON.stringify({
-                status: "Failed",
-                error: error.message
-            }));
-
+                await RedisClient.getInstance().setForRun(job.data.submissionId, JSON.stringify({
+                    status: "Failed",
+                    error: String(error)
+                }));
+            }
             throw error;
         }
     },

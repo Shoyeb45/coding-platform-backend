@@ -2,7 +2,6 @@ import { Request, Response } from "express"
 import { ContestService } from "../services/contest.service";
 import { HTTP_STATUS } from "../../config/httpCodes";
 import { ApiResponse } from "../../utils/ApiResponse";
-import { ProblemService } from "../services/problem.service";
 
 
 

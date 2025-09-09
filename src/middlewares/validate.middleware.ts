@@ -1,9 +1,8 @@
 // validate.middleware.ts
-import { Request, Response, NextFunction, RequestHandler } from "express";
+import { RequestHandler } from "express";
 import { ZodSchema } from "zod";
 
 import { ApiError } from "../utils/ApiError";
-import { logger } from "../utils/logger";
 
 type ZodErrorMessage = {
   expected: string,

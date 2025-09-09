@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { TProblem, TProblemCreate, TProblemDriver, TProblemDriverUpdate, TProblemFilter, TProblemModerator, TProblemUpdate } from "../types/problem.type";
+import { TProblem, TProblemCreate, TProblemDriver, TProblemDriverUpdate, TProblemFilter, TProblemModerator } from "../types/problem.type";
 import { ApiError } from "../../utils/ApiError";
 import { ProblemRepository } from "../repositories/problem.repository";
 import { logger } from "../../utils/logger";
@@ -260,7 +260,7 @@ export class ProblemService {
                 ...problemDetail, 
                 problemTags: problemDetail.problemTags.map(pt => ({ ...pt.tag }))
             },
-            sampleTestcases: processedTestcases
+            testcases: processedTestcases
         };
     }
 
