@@ -11,7 +11,6 @@ export class RedisClient {
                 host: config.redisHost,
                 port: config.redisPort,
                 password: config.redisPassword
-                // tls: config.redisTls ? {}: undefined  // required, because serverless uses TLS
             });
             this.redis.ping().then(res => logger.info("Redis connected:" + res))
                  .catch(err => logger.error("Redis error:", err));
