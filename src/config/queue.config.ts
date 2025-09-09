@@ -1,17 +1,17 @@
 import { ConnectionOptions } from 'bullmq';
 import dotenv from 'dotenv';
-
+import { config } from './index';
 dotenv.config();
 
 export const redisConfig: ConnectionOptions = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
+  host: config.redisHost,
+  port: config.redisPort,
+  password: config.redisPassword,
+  tls: config.redisTls ? {} : undefined,
   retryDelayOnFailover: 100,
   enableReadyCheck: false,
   maxRetriesPerRequest: null,
 };
-
 
 export const queueConfig = {
   defaultJobOptions: {
