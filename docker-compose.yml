@@ -1,0 +1,24 @@
+services:
+  worker-code-runner:
+    build: .
+    command: ["node", "dist/workers/codeRunnerWorker.js"]
+    env_file:
+      - .env
+    deploy:
+      replicas: 2   # can scale dynamically
+
+  worker-db-ops:
+    build: .
+    command: ["node", "dist/workers/dbOperationWorker.js"]
+    env_file:
+      - .env
+    deploy:
+      replicas: 1
+
+  worker-submission-runner:
+    build: .
+    command: ["node", "dist/workers/submissionRunnerWorker.js"]
+    env_file:
+      - .env
+    deploy:
+      replicas: 2

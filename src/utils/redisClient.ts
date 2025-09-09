@@ -10,8 +10,11 @@ export class RedisClient {
             this.redis = new Redis({
                 host: config.redisHost,
                 port: config.redisPort,
-                password: config.redisPassword
+                password: config.redisPassword,
+                tls: {}  // required, because serverless uses TLS
             });
+            this.redis.ping().then(res => logger.info("Redis connected:" + res))
+                 .catch(err => logger.error("Redis error:", err));
         } catch (error) {
             this.redis = undefined;
             console.error(error)
@@ -26,6 +29,12 @@ export class RedisClient {
         return this.instance;
     }
 
+    public isConnected() {
+        if (!this.redis) {
+            return false;
+        }
+        return true;
+    }
     public async setForRun(runId: string, value: string) {
         if (!this.redis) {
             logger.error("No redis client is present");

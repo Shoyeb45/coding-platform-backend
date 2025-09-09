@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { AuthUser } from "./types/auth.type";
 import cors from "cors";
 import { config } from "./config";
+import { RedisClient } from "./utils/redisClient";
 
 declare global {
   namespace Express {
@@ -16,6 +17,8 @@ declare global {
 }
 
 export function createHttpServer() {
+
+
   const app = express();
 
   app
@@ -40,8 +43,11 @@ export function createHttpServer() {
       res.json({
         message: "Coding platform app is running and it's healthy",
         success: true,
+        redisClient: RedisClient.getInstance().isConnected() ? "Redis instance is running fine.": "Redis instance is not running."
       });
     });
+    // Test redis connection
+    RedisClient.getInstance();
 
   return app;
 }
