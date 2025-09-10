@@ -33,8 +33,8 @@ export async function executeCodeWithJudge0(request: Judge0ExecutionRequest): Pr
       {
         headers: {
           'Content-Type': 'application/json',
-          'X-RapidAPI-Key': config.judge0ApiKey,
-          'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+          // 'X-RapidAPI-Key': config.judge0ApiKey,
+          // 'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
         },
         timeout: 30000, // 30 second timeout
       }
@@ -77,8 +77,8 @@ export async function batchSubmissionWithJudge0(languageId: string, code: string
       {
         headers: {
           'Content-Type': 'application/json',
-          'X-RapidAPI-Key': config.judge0ApiKey,
-          'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+          // 'X-RapidAPI-Key': config.judge0ApiKey,
+          // 'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
         },
         timeout: 30000,
       }
@@ -120,8 +120,8 @@ async function pollBatchResults(tokens: string[], batchSize: number): Promise<an
         `${config.judge0ApiUrl}/submissions/batch?tokens=${tokensParam}&base64_encoded=true`,
         {
           headers: {
-            'X-RapidAPI-Key': config.judge0ApiKey,
-            'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+            // 'X-RapidAPI-Key': config.judge0ApiKey,
+            // 'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
           },
           timeout: 30000,
         }
