@@ -1,7 +1,9 @@
 services:
   # Single image built once
   worker:
+    image: worker
     build: .
+
     env_file:
       - .env
     deploy:
