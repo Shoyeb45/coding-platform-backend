@@ -31,4 +31,4 @@ services:
 
 networks:
   coding-platform:
-    driver: bridge
+    external: true
