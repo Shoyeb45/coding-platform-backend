@@ -5,7 +5,9 @@ services:
     env_file:
       - .env
     deploy:
-      replicas: 2   # can scale dynamically
+      replicas: 1   # can scale dynamically
+    networks:
+      - coding-platform
 
   worker-db-ops:
     build: .
@@ -14,6 +16,8 @@ services:
       - .env
     deploy:
       replicas: 1
+    networks:
+      - coding-platform
 
   worker-submission-runner:
     build: .
@@ -21,4 +25,10 @@ services:
     env_file:
       - .env
     deploy:
-      replicas: 2
+      replicas: 1
+    networks:
+      - coding-platform
+
+networks:
+  coding-platform:
+    driver: bridge
