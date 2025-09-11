@@ -5,7 +5,7 @@ dotenv.config();
 export const config = {
     // backend app secret
     nodeEnv: process.env.NODE_ENV || "development",
-    port: process.env.PORT || 4000,
+    port: process.env.PORT || 8080,
     region: process.env.AWS_REGION || '',
     
     // aws secret

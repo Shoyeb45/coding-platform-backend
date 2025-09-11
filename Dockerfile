@@ -19,7 +19,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Expose the port (change if your app uses a different one)
-EXPOSE 4000
+EXPOSE 8080
 
 
 # Start the server

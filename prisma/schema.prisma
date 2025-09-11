@@ -21,29 +21,31 @@ model Beacon {
 }
 
 model Class {
-  id          String       @id @default(dbgenerated("gen_random_uuid()"))
+  id             String       @id @default(dbgenerated("gen_random_uuid()"))
   lecture_number String
-  subject_id  String
-  division_id String
-  teacher_id  String
-  room_id     String
-  start_date  DateTime
-  end_date    DateTime
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @default(now()) @map("updated_at")
-  attendances Attendance[]
-  division    Division     @relation(fields: [division_id], references: [id], onDelete: Cascade)
-  room        Room         @relation(fields: [room_id], references: [id], onDelete: Cascade)
-  subject     Subject      @relation(fields: [subject_id], references: [id], onDelete: Cascade)
-  teacher     Teacher      @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
-  scans       Scan[]
-  scanWindows ScanWindow[]
+  subject_id     String
+  division_id    String
+  teacher_id     String
+  room_id        String
+  start_date     DateTime
+  end_date       DateTime
+  googleEventId  String
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @default(now()) @map("updated_at")
+  attendances    Attendance[]
+  division       Division     @relation(fields: [division_id], references: [id], onDelete: Cascade)
+  room           Room         @relation(fields: [room_id], references: [id], onDelete: Cascade)
+  subject        Subject      @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+  teacher        Teacher      @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+  scans          Scan[]
+  scanWindows    ScanWindow[]
 
   @@index([subject_id], map: "class_subject_id_idx")
   @@index([division_id], map: "class_division_id_idx")
   @@index([teacher_id], map: "class_teacher_id_idx")
   @@index([room_id], map: "class_room_id_idx")
 }
+
 
 model Scan {
   id                 String              @id @default(dbgenerated("gen_random_uuid()"))
@@ -116,12 +118,15 @@ model WindowScanMapping {
 model Room {
   id        String   @id @default(dbgenerated("gen_random_uuid()"))
   name      String
+  center_id String   // Add this field
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @map("updated_at")
   beacons   Beacon[]
   classes   Class[]
-}
+  center    Center   @relation(fields: [center_id], references: [id], onDelete: Cascade) // Add this relation
 
+  @@index([center_id], map: "room_center_id_idx") // Add this index
+}
 model Problem {
   id                String             @id @default(cuid())
   title             String             @db.VarChar(200)
@@ -183,6 +188,7 @@ model ProblemTag {
   @@index([tagId])
   @@map("problem_tag")
 }
+
 model Tag {
   id          String       @id @default(cuid())
   name        String       @unique
@@ -248,10 +254,10 @@ model Contest {
   endTime           DateTime           @default(now()) @map("end_time")
   createdBy         String             @map("created_by")
   isOpen            Boolean            @default(false) @map("is_open")
-  isPublished       Boolean               @default(false) @map("is_published")
+  isPublished       Boolean            @default(false) @map("is_published")//change
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @updatedAt @map("updated_at")
-  subjectId         String?               @map("subject_id")
+  subjectId        String?            @map("subject_id")//change
   allowedLanguages  AllowedLanguage[]
   batchContests     BatchContest[]
   creator           Teacher            @relation(fields: [createdBy], references: [id], onDelete: Cascade)
@@ -259,8 +265,7 @@ model Contest {
   contestProblems   ContestProblem[]
   tags              ContestTag[]
   submissions       Submission[]
-  subject           Subject?              @relation(fields: [subjectId], references: [id])
-  contestLeaderboard ContestLeaderboard[]
+  subject          Subject?           @relation(fields: [subjectId], references: [id])//change
 
   @@index([createdBy])
   @@index([startTime])
@@ -268,27 +273,6 @@ model Contest {
   @@index([isOpen])
   @@index([title])
   @@map("contest")
-}
-
-
-// Model to store contest leaderboard data (calculated and cached)
-model ContestLeaderboard {
-  id               String   @id @default(cuid())
-  contestId        String   @map("contest_id")
-  studentId        String   @map("student_id")
-  rank             Int
-  score            Float
-  questionsSolved  Int      @map("questions_solved")
-  lastSubmittedAt  DateTime? @map("last_submitted_at")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
-  contest          Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
-  student          Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  @@unique([contestId, studentId])
-  @@index([contestId, rank])
-  @@index([studentId])
-  @@map("contest_leaderboard")
 }
 
 model BatchContest {
@@ -334,25 +318,6 @@ model AllowedLanguage {
   @@map("allowed_language")
 }
 
-
-// Model to store overall student statistics
-model StudentStats {
-  id                    String   @id @default(cuid())
-  studentId             String   @unique @map("student_id")
-  currentRank           Int?     @map("current_rank")
-  totalExams            Int      @default(0) @map("total_exams")
-  totalQuestionsSolved  Int      @default(0) @map("total_questions_solved")
-  totalScore            Float    @default(0) @map("total_score")
-  averageScore          Float    @default(0) @map("average_score")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
-  student               Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  @@index([currentRank])
-  @@index([totalScore])
-  @@map("student_stats")
-}
-
 model ContestModerator {
   id          String   @id @default(cuid())
   contestId   String   @map("contest_id")
@@ -372,8 +337,8 @@ model ContestProblem {
   id        String   @id @default(cuid())
   contestId String   @map("contest_id")
   problemId String   @map("problem_id")
+  point     Int      @default(1)//change
   createdAt DateTime @default(now()) @map("created_at")
-  point     Int      @default(1)  // 1-10
   updatedAt DateTime @updatedAt @map("updated_at")
   contest   Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
   problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
@@ -384,13 +349,6 @@ model ContestProblem {
   @@map("contest_problem")
 }
 
-model SubmissionStatus {
-  id   String @id @default(cuid())
-  name String @db.VarChar(200)
-
-  @@index([name])
-  @@map("submission_status")
-}
 
 model Submission {
   id                String              @id @default(cuid())
@@ -403,7 +361,7 @@ model Submission {
   executionTime     Float?              @map("execution_time")
   memoryUsed        Float?              @map("memory_used")
   submittedAt       DateTime            @default(now()) @map("submitted_at")
-  score             Float               @default(0)
+  score             Float?              @default(0) //change
   contest           Contest?            @relation(fields: [contestId], references: [id], onDelete: Cascade)
   language          ProgrammingLanguage @relation(fields: [languageId], references: [id], onDelete: Cascade)
   problem           Problem             @relation(fields: [problemId], references: [id], onDelete: Cascade)
@@ -446,11 +404,13 @@ model Center {
   academicHead  Admin?     @relation("AcademicHead", fields: [academic_head], references: [id], onDelete: Cascade)
   businessHead  Admin?     @relation("BusinessHead", fields: [business_head], references: [id], onDelete: Cascade)
   cohorts       Cohort[]
-  policies      Policy[]
   divisions     Division[]
+  policies      Policy[]
+  rooms         Room[]     
   schools       School[]
   students      Student[]
   teachers      Teacher[]
+  clubs         Club[]
 
   @@index([business_head], map: "center_business_head_idx")
   @@index([academic_head], map: "center_academic_head_idx")
@@ -472,6 +432,7 @@ model Admin {
   googleId            String?
   linkedin            String?
   role_id             String
+  pwId                String?                  @unique
   designation         String?
   googleAccessToken   String?
   googleRefreshToken  String?
@@ -493,10 +454,11 @@ model School {
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @default(now()) @map("updated_at")
   batches        Batch[]
+  divisions      Division[]
   center         Center          @relation(fields: [center_id], references: [id], onDelete: Cascade)
   students       Student[]
-  divisions      Division[]
   teacherSchools TeacherSchool[]
+  cohorts         Cohort[] 
 
   @@unique([center_id, name], map: "unique_school_name_per_center")
   @@index([center_id], map: "school_center_id_idx")
@@ -579,8 +541,6 @@ model Student {
   examMarks          StudentExamMarks[]
   studentLogs        StudentLog[]
   submissions        Submission[]
-  contestLeaderboard ContestLeaderboard[]
-  studentStats       StudentStats[]
 }
 
 model Behaviour {
@@ -658,42 +618,41 @@ model Certification {
 }
 
 model Education {
-  id                  String            @id @default(dbgenerated("gen_random_uuid()"))
-  institution         String
-  degree              String
-  field_of_study      String
-  start_date          DateTime
-  end_date            DateTime?
-  grade               Float?
-  createdAt           DateTime          @default(now()) @map("created_at")
-  updatedAt           DateTime          @default(now()) @map("updated_at")
-  ugEducationHistory  AcademicHistory[] @relation("UndergradEducation")
-  xEducationHistory   AcademicHistory[] @relation("XEducation")
-  xiiEducationHistory AcademicHistory[] @relation("XIIEducation")
+  id                              String                   @id @default(dbgenerated("gen_random_uuid()"))
+  institution                     String
+  degree                          String
+  field_of_study                  String
+  start_date                      DateTime
+  end_date                        DateTime?
+  grade                           Float?
+  createdAt                       DateTime                 @default(now()) @map("created_at")
+  updatedAt                       DateTime                 @default(now()) @map("updated_at")
+  ugEducationHistory              AcademicHistory[]        @relation("UndergradEducation")
+  xEducationHistory               AcademicHistory[]        @relation("XEducation")
+  xiiEducationHistory             AcademicHistory[]        @relation("XIIEducation")
+  teacherDoctoralEducationHistory TeacherAcademicHistory[] @relation("TeacherDoctoralEducation")
+  teacherPgEducationHistory       TeacherAcademicHistory[] @relation("TeacherPostgradEducation")
+  teacherUgEducationHistory       TeacherAcademicHistory[] @relation("TeacherUndergradEducation")
   teacherXEducationHistory        TeacherAcademicHistory[] @relation("TeacherXEducation")
   teacherXIIEducationHistory      TeacherAcademicHistory[] @relation("TeacherXIIEducation")
-  teacherUgEducationHistory       TeacherAcademicHistory[] @relation("TeacherUndergradEducation")
-  teacherPgEducationHistory       TeacherAcademicHistory[] @relation("TeacherPostgradEducation")
-  teacherDoctoralEducationHistory TeacherAcademicHistory[] @relation("TeacherDoctoralEducation")
 }
 
 model TeacherAcademicHistory {
-  id            String     @id @default(dbgenerated("gen_random_uuid()"))
-  teacher_id    String     @unique
-  x_education   String?    // Class 10th education
-  xii_education String?    // Class 12th education  
-  undergraduate String?    // Bachelor's degree
-  postgraduate  String?    // Master's degree (NEW - teachers might have this)
-  doctorate     String?    // PhD (NEW - teachers might have this)
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @default(now()) @map("updated_at")
-  
-  teacher       Teacher    @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
-  xEducation    Education? @relation("TeacherXEducation", fields: [x_education], references: [id], onDelete: Cascade)
-  xiiEducation  Education? @relation("TeacherXIIEducation", fields: [xii_education], references: [id], onDelete: Cascade)
-  undergrad     Education? @relation("TeacherUndergradEducation", fields: [undergraduate], references: [id], onDelete: Cascade)
-  postgrad      Education? @relation("TeacherPostgradEducation", fields: [postgraduate], references: [id], onDelete: Cascade)
+  id             String     @id @default(dbgenerated("gen_random_uuid()"))
+  teacher_id     String     @unique
+  x_education    String?
+  xii_education  String?
+  undergraduate  String?
+  postgraduate   String?
+  doctorate      String?
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @default(now()) @map("updated_at")
   doctoralDegree Education? @relation("TeacherDoctoralEducation", fields: [doctorate], references: [id], onDelete: Cascade)
+  postgrad       Education? @relation("TeacherPostgradEducation", fields: [postgraduate], references: [id], onDelete: Cascade)
+  teacher        Teacher    @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+  undergrad      Education? @relation("TeacherUndergradEducation", fields: [undergraduate], references: [id], onDelete: Cascade)
+  xEducation     Education? @relation("TeacherXEducation", fields: [x_education], references: [id], onDelete: Cascade)
+  xiiEducation   Education? @relation("TeacherXIIEducation", fields: [xii_education], references: [id], onDelete: Cascade)
 
   @@index([x_education], map: "teacher_academic_history_x_edu_idx")
   @@index([xii_education], map: "teacher_academic_history_xii_edu_idx")
@@ -701,7 +660,6 @@ model TeacherAcademicHistory {
   @@index([postgraduate], map: "teacher_academic_history_pg_edu_idx")
   @@index([doctorate], map: "teacher_academic_history_doc_edu_idx")
 }
-
 
 model AcademicHistory {
   id            String     @id @default(dbgenerated("gen_random_uuid()"))
@@ -721,8 +679,6 @@ model AcademicHistory {
   @@index([undergraduate], map: "academic_history_ug_edu_idx")
 }
 
-
-
 model Achievement {
   id           String   @id @default(dbgenerated("gen_random_uuid()"))
   student_id   String
@@ -741,44 +697,49 @@ model Cohort {
   id             String          @id @default(dbgenerated("gen_random_uuid()"))
   name           String
   center_id      String
+  school_id       String  
   start_date     DateTime
   end_date       DateTime?
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @default(now()) @map("updated_at")
   center         Center          @relation(fields: [center_id], references: [id], onDelete: Cascade)
+  school          School          @relation(fields: [school_id], references: [id], onDelete: Cascade)
   students       Student[]
   teacherCohorts TeacherCohort[]
 
   @@index([center_id], map: "cohort_center_id_idx")
+  @@index([school_id], map: "cohort_school_id_idx")
 }
 
 model Division {
-  id               String  @id @default(dbgenerated("gen_random_uuid()"))
-  code             String  @unique
+  id               String    @id @default(dbgenerated("gen_random_uuid()"))
+  code             String
   center_id        String
   school_id        String
   batch_id         String
-  current_semester String? @unique
+  current_semester String?   @unique
+  start_date       DateTime
+  end_date         DateTime?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @default(now()) @map("updated_at")
+  classes          Class[]
+  batch            Batch     @relation(fields: [batch_id], references: [id], onDelete: Cascade)
+  center           Center    @relation(fields: [center_id], references: [id], onDelete: Cascade)
+  school           School    @relation(fields: [school_id], references: [id], onDelete: Cascade)
+  students         Student[]
 
-  start_date DateTime
-  end_date   DateTime?
+  // Fixed: Use the same relation name for both sides
+  currentSemester  Semester? @relation("CurrentSemester", fields: [current_semester], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @map("updated_at")
-
-  classes  Class[]
-  batch    Batch     @relation(fields: [batch_id], references: [id], onDelete: Cascade)
-  semester Semester? @relation(fields: [current_semester], references: [id], onDelete: Cascade)
-  students Student[]
-
-  center Center @relation(fields: [center_id], references: [id], onDelete: Cascade)
-  school School @relation(fields: [school_id], references: [id], onDelete: Cascade)
+  // This is the 1-to-many relation with a unique name
+  semesters        Semester[] @relation("DivisionSemesters")
 
   @@index([batch_id], map: "division_batch_id_idx")
   @@index([current_semester], map: "division_semester_id_idx")
   @@index([center_id], map: "division_center_id_idx")
   @@index([school_id], map: "division_school_id_idx")
 }
+
 
 model PersonalDetail {
   id                     String   @id @default(dbgenerated("gen_random_uuid()"))
@@ -798,38 +759,39 @@ model PersonalDetail {
 }
 
 model Batch {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  name      String   @unique
+  id        String         @id @default(dbgenerated("gen_random_uuid()"))
+  name      String         
   center_id String
   school_id String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @map("updated_at")
-
-  center Center @relation(fields: [center_id], references: [id], onDelete: Cascade)
-  school School @relation(fields: [school_id], references: [id], onDelete: Cascade)
-
-  contests  BatchContest[]
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @default(now()) @map("updated_at")
+  center    Center         @relation(fields: [center_id], references: [id], onDelete: Cascade)
+  school    School         @relation(fields: [school_id], references: [id], onDelete: Cascade)
   divisions Division[]
   students  Student[]
+  contests  BatchContest[]
 
   @@index([center_id], map: "batch_center_id_idx")
   @@index([school_id], map: "batch_school_id_idx")
 }
 
+
 model Semester {
   id          String    @id @default(dbgenerated("gen_random_uuid()"))
   number      Int
-  division    Division? @relation
   division_id String
+  start_date  DateTime
+  end_date    DateTime?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @map("updated_at")
+  students    Student[]
+  subjects    Subject[]
 
-  start_date DateTime
-  end_date   DateTime?
+  // The many-to-one relation back to division
+  division          Division @relation("DivisionSemesters", fields: [division_id], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @map("updated_at")
-
-  students Student[]
-  subjects Subject[]
+  // Fixed: Use the same relation name and add the missing opposite field
+  divisionAsCurrent Division? @relation("CurrentSemester")
 
   @@index([division_id], map: "semester_division_id_idx")
 }
@@ -851,7 +813,7 @@ model Subject {
   name        String
   semester_id String
   credits     Int
-  code        String             @unique
+  code        String            
   teacher_id  String
   createdAt   DateTime           @default(now()) @map("created_at")
   updatedAt   DateTime           @default(now()) @map("updated_at")
@@ -860,7 +822,8 @@ model Subject {
   examMarks   StudentExamMarks[]
   semester    Semester           @relation(fields: [semester_id], references: [id], onDelete: Cascade)
   teacher     Teacher            @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
-  contests    Contest[]
+  cprModules CprModule[]  
+  contests     Contest[]               
 
   @@index([semester_id], map: "subject_semester_id_idx")
   @@index([teacher_id], map: "subject_teacher_id_idx")
@@ -925,11 +888,12 @@ model TeacherExperience {
 }
 
 model Teacher {
-  id                 String                 @id @default(dbgenerated("gen_random_uuid()"))
+  id                 String                  @id @default(dbgenerated("gen_random_uuid()"))
   name               String
-  email              String                 @unique
-  phone              String                 @unique
+  email              String                  @unique
+  phone              String                  @unique
   role               TeacherRole
+  pwId               String?                  @unique
   googleId           String?
   linkedin           String?
   personal_mail      String?
@@ -937,31 +901,38 @@ model Teacher {
   gender             Gender?
   center_id          String
   designation        String?
+  
+  supervising_teacher_id String? 
+  
   googleAccessToken  String?
   googleRefreshToken String?
-  about              String?   
   googleTokenExpiry  DateTime?
   lastLoginAt        DateTime?
-  createdAt          DateTime               @default(now()) @map("created_at")
-  updatedAt          DateTime               @default(now()) @map("updated_at")
+  createdAt          DateTime                @default(now()) @map("created_at")
+  updatedAt          DateTime                @default(now()) @map("updated_at")
+  about              String?
+  
   classes            Class[]
   clubOfficials      ClubOfficial[]
-  contests           Contest[]
-  contestModerations ContestModerator[]
-  createdProblems    Problem[]
-  problemModerations ProblemModerator[]
-  examMarks          StudentExamMarks[]     @relation("GradedExams")
+  examMarks          StudentExamMarks[]      @relation("GradedExams")
   subjects           Subject[]
-  center             Center                 @relation(fields: [center_id], references: [id], onDelete: Cascade)
+  center             Center                  @relation(fields: [center_id], references: [id], onDelete: Cascade)
+  academicHistory    TeacherAcademicHistory?
   teacherCohorts     TeacherCohort[]
   teacherExperiences TeacherExperience[]
   researchPapers     TeacherResearchPaper[]
   teacherSchools     TeacherSchool[]
-  academicHistory    TeacherAcademicHistory?
+  contests           Contest[]
+  contestModerations ContestModerator[]
+  createdProblems    Problem[]
+  problemModerations ProblemModerator[]
+  
+  supervisingTeacher Teacher?  @relation("TeacherAssistant", fields: [supervising_teacher_id], references: [id], onDelete: SetNull)
+  assistantTeachers  Teacher[] @relation("TeacherAssistant")
 
   @@index([center_id], map: "teacher_center_id_idx")
+  @@index([supervising_teacher_id], map: "teacher_supervising_teacher_idx")
 }
-
 model TeacherResearchPaper {
   id                String        @id @default(dbgenerated("gen_random_uuid()"))
   teacher_id        String
@@ -994,10 +965,12 @@ model Club {
   name          String
   description   String?
   leader_id     String
+   center_id     String
   established   DateTime?
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @default(now()) @map("updated_at")
   leader        Student        @relation("ClubLeader", fields: [leader_id], references: [id], onDelete: Cascade)
+  center        Center         @relation(fields: [center_id], references: [id], onDelete: Cascade)
   coreTeams     ClubCoreTeam[]
   clubOfficials ClubOfficial[]
 
@@ -1093,16 +1066,6 @@ model Placement {
   @@index([student_id], map: "placement_student_id_idx")
 }
 
-enum AuthorRole {
-  SUPER_ADMIN
-  ADMIN
-  OPS
-  BATCHOPS
-  TEACHER
-  ASSISTANT_TEACHER
-  STUDENT
-}
-
 model Post {
   id          String      @id @default(dbgenerated("gen_random_uuid()"))
   content     String
@@ -1147,7 +1110,7 @@ model PostMedia {
   id            String   @id @default(dbgenerated("gen_random_uuid()"))
   type          String
   mime_type     String
-  storage_url   String
+  s3_key        String  @default("")
   thumbnail_url String?
   duration      String?
   post_id       String
@@ -1171,6 +1134,67 @@ model ClubCoreTeam {
   @@index([club_id], map: "core_team_club_id_idx")
 }
 
+enum CPRStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+model CprModule {
+  id         String     @id @default(dbgenerated("gen_random_uuid()"))
+  name       String
+  order      Int
+  subject_id String
+
+  subject    Subject    @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+  topics     CprTopic[]
+
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  @@unique([subject_id, order])
+  @@index([subject_id])
+}
+
+
+model CprTopic {
+  id         String        @id @default(dbgenerated("gen_random_uuid()"))
+  name       String
+  order      Int
+  module_id  String
+
+  module     CprModule     @relation(fields: [module_id], references: [id], onDelete: Cascade)
+  subTopics  CprSubTopic[]
+
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  @@unique([module_id, order])
+  @@index([module_id])
+}
+
+model CprSubTopic {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()"))
+  name               String
+  order              Int
+  topic_id           String
+  lecture_number     Int       @default(1) // Changed from lecture_count
+
+  // Tracking Fields
+  status             CPRStatus @default(PENDING)
+  planned_start_date DateTime?
+  planned_end_date   DateTime?
+  actual_start_date  DateTime?
+  actual_end_date    DateTime?
+
+  topic              CprTopic  @relation(fields: [topic_id], references: [id], onDelete: Cascade)
+
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@unique([topic_id, order])
+  @@index([topic_id])
+}
 model ChangeLog {
   id              String   @id @default(dbgenerated("gen_random_uuid()"))
   entity_name     String
@@ -1181,6 +1205,16 @@ model ChangeLog {
   old_data        Json?
   new_data        Json?
   createdAt       DateTime @default(now()) @map("created_at")
+}
+
+enum AuthorRole {
+  SUPER_ADMIN
+  ADMIN
+  OPS
+  BATCHOPS
+  TEACHER
+  ASSISTANT_TEACHER
+  STUDENT
 }
 
 enum AttendanceStatus {
